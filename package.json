@@ -1,0 +1,19 @@
+{
+  "name": "lifeos",
+  "version": "0.1.0",
+  "description": "LifeOS · 个人智能操作系统 - 本地后端",
+  "type": "commonjs",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.8.0"
+  }
+}

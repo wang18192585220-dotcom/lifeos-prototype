@@ -36,7 +36,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       req.file.originalname,
       req.file.path,
       ext,
-      req.file.size
+      req.file.size,
+      req.body.knowledgeId,
+      req.body.folderId,
+      req.body.relativePath
     );
     res.json({ ok: true, ...result });
   } catch (err) {
@@ -47,9 +50,9 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 // Add manual knowledge entry
 router.post('/entry', (req, res) => {
   try {
-    const { title, content, tags } = req.body;
+    const { title, content, tags, knowledgeId } = req.body;
     if (!title || !content) return res.status(400).json({ ok: false, error: '标题和内容必填' });
-    const result = knowledge.addManualEntry(title, content, tags || []);
+    const result = knowledge.addManualEntry(title, content, tags || [], knowledgeId);
     res.json({ ok: true, ...result });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -58,23 +61,23 @@ router.post('/entry', (req, res) => {
 
 // List all documents
 router.get('/documents', (req, res) => {
-  res.json({ ok: true, documents: knowledge.listDocuments() });
+  res.json({ ok: true, documents: knowledge.listDocuments(req.query.knowledgeId, req.query.folderId) });
 });
 
 // List manual entries
 router.get('/entries', (req, res) => {
-  res.json({ ok: true, entries: knowledge.listEntries() });
+  res.json({ ok: true, entries: knowledge.listEntries(req.query.knowledgeId) });
 });
 
 // Delete a document
 router.delete('/documents/:id', (req, res) => {
-  const ok = knowledge.deleteDocument(req.params.id);
+  const ok = knowledge.deleteDocument(req.params.id, req.query.knowledgeId);
   res.json({ ok });
 });
 
 // Delete an entry
 router.delete('/entries/:id', (req, res) => {
-  const ok = knowledge.deleteEntry(req.params.id);
+  const ok = knowledge.deleteEntry(req.params.id, req.query.knowledgeId);
   res.json({ ok });
 });
 
@@ -83,7 +86,7 @@ router.get('/search', async (req, res) => {
   try {
     const q = req.query.q || '';
     const max = parseInt(req.query.max) || 5;
-    const results = await knowledge.retrieveRelevant(q, max);
+    const results = await knowledge.retrieveRelevant(q, max, req.query.knowledgeId);
     res.json({ ok: true, results });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -93,7 +96,7 @@ router.get('/search', async (req, res) => {
 // Re-index a document (re-generate embeddings)
 router.post('/reindex/:id', async (req, res) => {
   try {
-    await knowledge.generateEmbeddings(req.params.id);
+    await knowledge.generateEmbeddings(req.params.id, req.query.knowledgeId);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });

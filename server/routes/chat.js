@@ -6,14 +6,21 @@ const knowledge = require('../services/knowledge');
 const skills = require('../services/skills');
 
 // Build system prompt with knowledge context
-async function buildSystemPrompt(internalData) {
+async function buildSystemPrompt(internalData, agentOverride) {
   const cfg = getConfig();
   const todayKey = new Date().toISOString().slice(0, 10);
 
-  let systemPrompt = cfg.systemPrompt || '';
-  systemPrompt += `\n\n你是 LifeOS AI，嵌入在"LifeOS · 个人智能操作系统"中，是用户 Shiyu 的个人智能助手。
+  let systemPrompt = '';
+  if (agentOverride && agentOverride.systemPrompt) {
+    systemPrompt = agentOverride.systemPrompt;
+    systemPrompt += `\n\n今天日期：${todayKey}
+你运行在"LifeOS · 个人智能操作系统"中。回答简洁、实用、有行动导向，使用中文。`;
+  } else {
+    systemPrompt = cfg.systemPrompt || '';
+    systemPrompt += `\n\n你是 LifeOS AI，嵌入在"LifeOS · 个人智能操作系统"中，是用户 Shiyu 的个人智能助手。
 今天日期：${todayKey}
 回答简洁、实用、有行动导向，使用中文。`;
+  }
 
   // Inject knowledge base context if enabled
   if (cfg.knowledgeEnabled !== 'false') {
@@ -29,7 +36,7 @@ async function buildSystemPrompt(internalData) {
 // Non-streaming chat (kept for compatibility)
 router.post('/', async (req, res) => {
   try {
-    const { messages = [], internalData = '' } = req.body;
+    const { messages = [], internalData = '', knowledgeId, knowledgeDocumentIds } = req.body;
     const systemContent = await buildSystemPrompt(internalData);
     const fullMessages = [{ role: 'system', content: systemContent }, ...messages];
 
@@ -38,11 +45,11 @@ router.post('/', async (req, res) => {
 
     // Add knowledge retrieval to context if enabled
     const cfg = getConfig();
-    if (cfg.knowledgeEnabled !== 'false') {
+    if (cfg.knowledgeEnabled !== 'false' && !(Array.isArray(knowledgeDocumentIds) && knowledgeDocumentIds.length === 0)) {
       const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
       if (lastUserMsg) {
         const maxChunks = parseInt(cfg.knowledgeMaxChunks) || 5;
-        const relevant = await knowledge.retrieveRelevant(lastUserMsg.content, maxChunks);
+        const relevant = await knowledge.retrieveRelevant(lastUserMsg.content, maxChunks, knowledgeId, knowledgeDocumentIds);
         if (relevant.length > 0) {
           const contextText = relevant.map((r, i) =>
             `[${i + 1}] 来源：${r.source}${r.title ? ` - ${r.title}` : ''}\n${r.content}`
@@ -67,7 +74,7 @@ router.post('/', async (req, res) => {
 
 // Streaming chat (SSE)
 router.post('/stream', async (req, res) => {
-  const { messages = [], internalData = '', extraTools = [] } = req.body;
+  const { messages = [], internalData = '', extraTools = [], agentSystemPrompt = '', temperature = null, knowledgeId, knowledgeDocumentIds } = req.body;
 
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -82,16 +89,16 @@ router.post('/stream', async (req, res) => {
 
   try {
     const cfg = getConfig();
-    const systemContent = await buildSystemPrompt(internalData);
+    const systemContent = await buildSystemPrompt(internalData, agentSystemPrompt ? { systemPrompt: agentSystemPrompt } : null);
     let fullMessages = [{ role: 'system', content: systemContent }, ...messages];
 
     // Retrieve knowledge
-    if (cfg.knowledgeEnabled !== 'false') {
+    if (cfg.knowledgeEnabled !== 'false' && !(Array.isArray(knowledgeDocumentIds) && knowledgeDocumentIds.length === 0)) {
       const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
       if (lastUserMsg) {
         const maxChunks = parseInt(cfg.knowledgeMaxChunks) || 5;
         send('status', { status: 'searching_knowledge' });
-        const relevant = await knowledge.retrieveRelevant(lastUserMsg.content, maxChunks);
+        const relevant = await knowledge.retrieveRelevant(lastUserMsg.content, maxChunks, knowledgeId, knowledgeDocumentIds);
         if (relevant.length > 0) {
           const contextText = relevant.map((r, i) =>
             `[${i + 1}] ${r.source}${r.title ? ' - ' + r.title : ''}\n${r.content}`
@@ -110,7 +117,9 @@ router.post('/stream', async (req, res) => {
     const backendTools = toolDefs.map(t => t.function);
     const extraToolFcns = (extraTools || []).map(t => t.function || t);
     const allTools = [...backendTools, ...extraToolFcns];
-    const llmResp = await callLLM(fullMessages, allTools, true);
+    const llmOptions = {};
+    if (temperature != null) llmOptions.temperature = temperature;
+    const llmResp = await callLLM(fullMessages, allTools, true, llmOptions);
 
     send('status', { status: 'generating' });
 

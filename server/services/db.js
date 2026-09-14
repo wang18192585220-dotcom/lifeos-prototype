@@ -151,6 +151,11 @@ function updateChunk(id, patch) {
   return null;
 }
 
+function deleteChunksByDocId(docId) {
+  const chunks = readJSON(CHUNKS_FILE, []).filter((c) => c.docId !== docId);
+  writeJSON(CHUNKS_FILE, chunks);
+}
+
 function allChunksWithEmbedding() {
   return readJSON(CHUNKS_FILE, []).filter((c) => c.embedding && c.embedding.length);
 }
@@ -345,6 +350,7 @@ module.exports = {
   listChunks,
   insertChunks,
   updateChunk,
+  deleteChunksByDocId,
   allChunksWithEmbedding,
   // entries
   listEntries,

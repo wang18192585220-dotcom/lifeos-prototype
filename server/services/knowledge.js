@@ -47,22 +47,39 @@ async function parseFile(filePath, fileType) {
   return buffer.toString('utf8');
 }
 
-async function addDocument(originalName, filePath, fileType, fileSize) {
+function normalizeKnowledgeId(knowledgeId) {
+  return knowledgeId || 'global';
+}
+
+function belongsToKnowledge(item, knowledgeId) {
+  if (knowledgeId === undefined) return true;
+  return normalizeKnowledgeId(item.knowledgeId) === normalizeKnowledgeId(knowledgeId);
+}
+
+async function addDocument(originalName, filePath, fileType, fileSize, knowledgeId, folderId = '', relativePath = '') {
   const text = await parseFile(filePath, fileType);
   const chunks = chunkText(text);
   const filename = path.basename(filePath);
+  const ownerId = normalizeKnowledgeId(knowledgeId);
+  const ownerFolderId = folderId || '';
+  const sourcePath = relativePath || '';
 
   const doc = db.insertDocument({
     filename,
     originalName,
     fileType,
     fileSize,
+    knowledgeId: ownerId,
+    folderId: ownerFolderId,
+    relativePath: sourcePath,
     chunkCount: chunks.length,
     status: 'indexing',
   });
 
   const chunkRows = chunks.map((content, i) => ({
     docId: doc.id,
+    knowledgeId: ownerId,
+    folderId: ownerFolderId,
     chunkIndex: i,
     content,
     embedding: null,
@@ -79,46 +96,28 @@ async function addDocument(originalName, filePath, fileType, fileSize) {
   return { docId: doc.id, chunkCount: chunks.length };
 }
 
-async function generateEmbeddings(docId) {
+async function generateEmbeddings(docId, knowledgeId) {
+  const doc = db.getDocument(docId);
+  if (!doc || !belongsToKnowledge(doc, knowledgeId)) throw new Error('文档不存在');
+  const ownerId = normalizeKnowledgeId(doc.knowledgeId);
   const chunks = db.listChunks(docId);
   for (const chunk of chunks) {
     const emb = await getEmbedding(chunk.content);
-    if (emb) {
-      db.updateChunk(chunk.id, { embedding: JSON.stringify(emb) });
-    }
+    const patch = { knowledgeId: ownerId };
+    if (emb) patch.embedding = JSON.stringify(emb);
+    db.updateChunk(chunk.id, patch);
   }
-  db.updateDocument(docId, { status: 'ready' });
+  db.updateDocument(docId, { status: 'ready', knowledgeId: ownerId });
 }
 
-function addManualEntry(title, content, tags = '') {
+function addManualEntry(title, content, tags = '', knowledgeId) {
   const tagStr = Array.isArray(tags) ? tags.join(',') : tags;
-  const entry = db.insertEntry({ title, content, tags: tagStr });
-
-  getEmbedding(`${title} ${content}`)
-    .then((emb) => {
-      if (emb) {
-        // 手动条目没有独立 chunk 表，直接把 embedding 存到一个关联的 chunk 里（或忽略，用关键词检索兜底）
-        // 这里简单：存入 chunks 表作为独立条目
-        const inserted = db.insertChunks([
-          {
-            docId: 'entry_' + entry.id,
-            chunkIndex: 0,
-            content: `${title}\n${content}`,
-            embedding: JSON.stringify(emb),
-            source: '手动条目',
-            title,
-            createdAt: Date.now(),
-          },
-        ]);
-        inserted.forEach((c) => db.updateChunk(c.id, { embedding: JSON.stringify(emb) }));
-      }
-    })
-    .catch(() => {});
-
-  // 无 embedding 时也可检索：写一份到 chunks 表（无 embedding 走关键词）
-  db.insertChunks([
+  const ownerId = normalizeKnowledgeId(knowledgeId);
+  const entry = db.insertEntry({ title, content, tags: tagStr, knowledgeId: ownerId });
+  const [chunk] = db.insertChunks([
     {
       docId: 'entry_' + entry.id,
+      knowledgeId: ownerId,
       chunkIndex: 0,
       content: `${title}\n${content}`,
       embedding: null,
@@ -128,34 +127,44 @@ function addManualEntry(title, content, tags = '') {
     },
   ]);
 
+  getEmbedding(`${title} ${content}`)
+    .then((emb) => {
+      if (emb) db.updateChunk(chunk.id, { embedding: JSON.stringify(emb) });
+    })
+    .catch(() => {});
+
   return { id: entry.id };
 }
 
-function listDocuments() {
-  return db.listDocuments().map((d) => ({
+function listDocuments(knowledgeId, folderId) {
+  return db.listDocuments().filter((d) => belongsToKnowledge(d, knowledgeId) && (folderId === undefined || (d.folderId || '') === folderId)).map((d) => ({
     id: d.id,
     name: d.originalName,
     type: d.fileType,
     size: d.fileSize,
     chunks: d.chunkCount,
+    knowledgeId: normalizeKnowledgeId(d.knowledgeId),
+    folderId: d.folderId || '',
+    relativePath: d.relativePath || '',
     createdAt: d.createdAt,
     status: d.status,
   }));
 }
 
-function listEntries() {
-  return db.listEntries().map((e) => ({
+function listEntries(knowledgeId) {
+  return db.listEntries().filter((e) => belongsToKnowledge(e, knowledgeId)).map((e) => ({
     id: e.id,
     title: e.title,
     content: e.content,
     tags: e.tags ? e.tags.split(',').filter(Boolean) : [],
+    knowledgeId: normalizeKnowledgeId(e.knowledgeId),
     createdAt: e.createdAt,
   }));
 }
 
-function deleteDocument(docId) {
+function deleteDocument(docId, knowledgeId) {
   const doc = db.getDocument(docId);
-  if (!doc) return false;
+  if (!doc || !belongsToKnowledge(doc, knowledgeId)) return false;
   const filePath = path.join(db.UPLOADS_DIR, doc.filename);
   if (fs.existsSync(filePath)) {
     try { fs.unlinkSync(filePath); } catch (e) { /* ignore */ }
@@ -164,18 +173,11 @@ function deleteDocument(docId) {
   return true;
 }
 
-function deleteEntry(entryId) {
+function deleteEntry(entryId, knowledgeId) {
+  const entry = db.listEntries().find((e) => e.id === entryId);
+  if (!entry || !belongsToKnowledge(entry, knowledgeId)) return false;
   db.deleteEntry(entryId);
-  // 同时删除关联 chunks
-  const chunks = db.listChunks().filter((c) => c.docId === 'entry_' + entryId);
-  chunks.forEach((c) => {
-    const all = db.listChunks();
-    const remaining = all.filter((x) => x.id !== c.id);
-    const fs_path = require('path');
-    const fs_mod = require('fs');
-    const chunksFile = fs_path.join(db.DATA_DIR, 'knowledge_chunks.json');
-    fs_mod.writeFileSync(chunksFile, JSON.stringify(remaining, null, 2), 'utf8');
-  });
+  db.deleteChunksByDocId('entry_' + entryId);
   return true;
 }
 
@@ -211,11 +213,19 @@ function keywordSearch(query, items, limit) {
   return scored.sort((a, b) => b._score - a._score).slice(0, limit);
 }
 
-async function retrieveRelevant(query, maxChunks = 5) {
+async function retrieveRelevant(query, maxChunks = 5, knowledgeId, knowledgeDocumentIds) {
   const queryEmb = await getEmbedding(query);
+  const selectedIds = Array.isArray(knowledgeDocumentIds) ? new Set(knowledgeDocumentIds) : null;
 
-  const docChunks = db.listChunks();
-  const docs = db.listDocuments();
+  const docChunks = db.listChunks().filter((c) => {
+    if (!belongsToKnowledge(c, knowledgeId)) return false;
+    if (!selectedIds) return true;
+    const selectionKey = c.docId && c.docId.startsWith('entry_')
+      ? `entry:${c.docId.slice(6)}`
+      : `document:${c.docId}`;
+    return selectedIds.has(selectionKey) || selectedIds.has(c.docId);
+  });
+  const docs = db.listDocuments().filter((d) => belongsToKnowledge(d, knowledgeId));
   const docMap = Object.fromEntries(docs.map((d) => [d.id, d.originalName]));
 
   const allItems = docChunks

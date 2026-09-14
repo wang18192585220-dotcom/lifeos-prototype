@@ -22,10 +22,14 @@ function getProviderConfig() {
   };
 }
 
-async function callLLM(messages, tools = [], stream = false) {
+async function callLLM(messages, tools = [], stream = false, options = {}) {
   const cfg = getProviderConfig();
   if (!cfg.apiKey) {
     throw new Error('NO_API_KEY');
+  }
+  // Allow per-call overrides (temperature etc.)
+  if (options.temperature != null && !isNaN(options.temperature)) {
+    cfg.temperature = options.temperature;
   }
 
   if (cfg.provider === 'claude') {

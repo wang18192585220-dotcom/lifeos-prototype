@@ -6,6 +6,7 @@
  */
 const express = require('express');
 const crypto = require('node:crypto');
+const { ChatClient, buildTools, Orchestrator } = require('../modules/agent');
 
 function rid() {
   return crypto.randomUUID();
@@ -187,6 +188,48 @@ function agentRoutes() {
   });
   router.get('/sessions/:id/messages', (req, res) => {
     res.json({ data: services(req).sessions.listMessages(req.params.id) });
+  });
+  router.post('/sessions/:id/turns', async (req, res) => {
+    const s = services(req);
+    const session = s.sessions.getSession(req.params.id);
+    if (!session) return fail(res, 404, 'not_found', '会话不存在');
+    const agent = s.agents.get(session.agentId);
+    if (!agent) return fail(res, 404, 'not_found', '角色不存在');
+    const profile = agent.modelProfileId ? s.modelProfiles.get(agent.modelProfileId) : null;
+    if (!profile) return fail(res, 422, 'validation', '角色未配置模型');
+    const credentials = req.lifeos.services.credentials;
+    const apiKey = profile.credentialRef && credentials ? credentials.get(profile.credentialRef) : null;
+    if (!apiKey) return fail(res, 422, 'validation', '模型凭据未设置');
+
+    const message = req.body && req.body.message;
+    if (typeof message !== 'string' || !message.trim()) return fail(res, 422, 'validation', 'message 必填');
+
+    const client = new ChatClient({
+      baseUrl: profile.baseUrl,
+      apiKey,
+      model: profile.model,
+      temperature: typeof profile.temperature === 'number' ? profile.temperature : 0,
+    });
+    const tools = buildTools({
+      core: s.core,
+      proposals: s.proposals,
+      getContext: () => ({ sessionId: session.id, agentId: agent.id }),
+    });
+    const orchestrator = new Orchestrator({ core: s.core, proposals: s.proposals, sessions: s.sessions, tools });
+    const events = [];
+    try {
+      const result = await orchestrator.runTurn({
+        sessionId: session.id,
+        userMessage: message,
+        agent: { rolePrompt: agent.rolePrompt },
+        modelClient: client,
+        onEvent: (e) => events.push(e),
+      });
+      const pendingProposals = s.proposals.list({ sessionId: session.id }).filter((p) => p.status === 'pending');
+      res.json({ data: { content: result.content, proposals: pendingProposals, events } });
+    } catch (e) {
+      handleError(res, e);
+    }
   });
 
   // ---- proposals ----

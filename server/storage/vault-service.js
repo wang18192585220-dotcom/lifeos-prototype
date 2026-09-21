@@ -74,6 +74,10 @@ class VaultService {
       const { CoreService } = require('../modules/core');
       const { KnowledgeService } = require('../modules/knowledge');
       const { SessionService, ProposalService } = require('../modules/agent');
+      const { LearningService } = require('../modules/learning');
+      const { MemoryService } = require('../modules/memory');
+      const { SkillService } = require('../modules/skills');
+      const { WorkflowService } = require('../modules/workflows');
       const { Repository } = require('../modules/core/repository');
 
       const core = new CoreService(this._handle.adapter);
@@ -82,6 +86,10 @@ class VaultService {
         knowledge: new KnowledgeService(this._handle.adapter, this._handle.root),
         sessions: new SessionService(this._handle.adapter),
         proposals: new ProposalService(this._handle.adapter, core),
+        learning: new LearningService(this._handle.adapter),
+        memory: new MemoryService(this._handle.adapter),
+        skills: new SkillService(this._handle.adapter),
+        workflows: new WorkflowService(this._handle.adapter),
         agents: new Repository(this._handle.adapter, 'agents', {
           name: 'name',
           rolePrompt: 'role_prompt',

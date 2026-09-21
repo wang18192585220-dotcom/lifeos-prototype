@@ -12,6 +12,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { coreRoutes } = require('./routes/core');
 const { agentRoutes } = require('./routes/agent');
+const { s4Routes } = require('./routes/s4');
 
 function generateToken() {
   return crypto.randomBytes(32).toString('hex');
@@ -121,6 +122,9 @@ function createApp(deps = {}) {
 
   // AI 与资料路由（model-profiles/agents/libraries/documents/search/sessions/proposals）
   app.use('/api/v1', agentRoutes());
+
+  // S4 路由（learning-profiles/records/assessments/memories/skills/workflows）
+  app.use('/api/v1', s4Routes());
 
   // 未知 API → JSON 404（仅 /api/v1；不暴露 HTML 或内部路径）
   app.use('/api/v1', (req, res) => {

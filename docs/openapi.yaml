@@ -549,7 +549,7 @@ components:
           schema: { $ref: '#/components/schemas/ErrorEnvelope' }
 
 paths:
-  /health:
+  /api/v1/health:
     get:
       summary: 服务状态
       responses:
@@ -559,7 +559,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Envelope' }
 
-  /bootstrap:
+  /api/v1/bootstrap:
     get:
       summary: 初始化状态、功能能力、当前 Vault 状态、设置摘要
       responses:
@@ -569,7 +569,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Envelope' }
 
-  /vault/open:
+  /api/v1/vault/open:
     post:
       summary: 消费主进程文件选择产生的短期令牌并打开 Vault
       parameters: [$ref: '#/components/parameters/IdempotencyKey']
@@ -577,13 +577,13 @@ paths:
         '200': { description: 打开成功 }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
-  /vault/status:
+  /api/v1/vault/status:
     get:
       summary: 查询当前 Vault 状态
       responses:
         '200': { description: 状态信息 }
 
-  /goals:
+  /api/v1/goals:
     get:
       summary: 目标列表
       responses:
@@ -594,7 +594,7 @@ paths:
       responses:
         '201': { description: 创建成功 }
 
-  /goals/{id}:
+  /api/v1/goals/{id}:
     parameters:
       - name: id
         in: path
@@ -617,132 +617,132 @@ paths:
       summary: 软删除/归档；删除影响先预览
       responses: { '200': { description: 已归档 } }
 
-  /projects:
+  /api/v1/projects:
     get: { summary: 项目列表 }
     post:
       summary: 创建项目
       parameters: [$ref: '#/components/parameters/IdempotencyKey']
 
-  /projects/{id}:
+  /api/v1/projects/{id}:
     get: { summary: 项目详情 }
     patch: { summary: 手动编辑项目 }
     delete: { summary: 软删除/归档项目 }
 
-  /projects/{id}/stages:
+  /api/v1/projects/{id}/stages:
     get: { summary: 阶段列表 }
     post: { summary: 创建阶段 }
 
-  /projects/{id}/milestones:
+  /api/v1/projects/{id}/milestones:
     get: { summary: 里程碑列表 }
     post: { summary: 创建里程碑 }
 
-  /stages/{id}:
+  /api/v1/stages/{id}:
     patch: { summary: 编辑阶段 }
     delete: { summary: 归档阶段 }
 
-  /milestones/{id}:
+  /api/v1/milestones/{id}:
     patch: { summary: 编辑里程碑 }
     delete: { summary: 归档里程碑 }
 
-  /projects/{id}/plan:
+  /api/v1/projects/{id}/plan:
     get: { summary: 当前计划 }
 
-  /plans/{id}/versions:
+  /api/v1/plans/{id}/versions:
     get: { summary: 计划历史版本 }
 
-  /projects/{id}/plan-versions:
+  /api/v1/projects/{id}/plan-versions:
     post:
       summary: 用户直接保存计划新版本；AI 只能经提案调用内部同一服务
       parameters: [$ref: '#/components/parameters/IdempotencyKey']
 
-  /calendar:
+  /api/v1/calendar:
     get: { summary: 由 tasks 按日期、时区和状态投影 }
 
-  /today:
+  /api/v1/today:
     get: { summary: 今日任务投影 }
 
-  /tasks:
+  /api/v1/tasks:
     get: { summary: 任务列表 }
     post:
       summary: 创建任务
       parameters: [$ref: '#/components/parameters/IdempotencyKey']
 
-  /tasks/{id}:
+  /api/v1/tasks/{id}:
     get: { summary: 任务详情 }
     patch: { summary: 手动编辑任务 }
     delete: { summary: 软删除/归档任务 }
 
-  /agents:
+  /api/v1/agents:
     get: { summary: Agent 列表 }
     post: { summary: 创建 Agent }
 
-  /agents/{id}:
+  /api/v1/agents/{id}:
     get: { summary: Agent 详情 }
     patch: { summary: 编辑 Agent }
     delete: { summary: 归档 Agent }
 
-  /agents/{id}/grants:
+  /api/v1/agents/{id}/grants:
     put: { summary: 更新资料授权 }
 
-  /agents/{id}/skills:
+  /api/v1/agents/{id}/skills:
     put: { summary: 更新 Skill 版本绑定 }
 
-  /model-profiles:
+  /api/v1/model-profiles:
     get: { summary: 模型配置列表 }
     post: { summary: 创建模型配置 }
 
-  /model-profiles/{id}:
+  /api/v1/model-profiles/{id}:
     patch: { summary: 修改模型配置 }
     delete: { summary: 删除模型配置 }
 
-  /model-profiles/{id}/test:
+  /api/v1/model-profiles/{id}/test:
     post: { summary: 连接及能力探测，记录结果 }
 
-  /libraries:
+  /api/v1/libraries:
     get: { summary: 资料库列表 }
     post: { summary: 创建资料库 }
 
-  /libraries/{id}:
+  /api/v1/libraries/{id}:
     patch: { summary: 编辑资料库 }
     delete: { summary: 删除资料库 }
 
-  /libraries/{id}/documents:
+  /api/v1/libraries/{id}/documents:
     post:
       summary: 导入资料
       parameters: [$ref: '#/components/parameters/IdempotencyKey']
 
-  /documents/{id}:
+  /api/v1/documents/{id}:
     get: { summary: 资料及处理状态 }
     patch: { summary: 元数据编辑 }
     delete: { summary: 删除资料 }
 
-  /documents/{id}/content:
+  /api/v1/documents/{id}/content:
     get: { summary: 授权后读取正文（含来源定位） }
 
-  /documents/{id}/file:
+  /api/v1/documents/{id}/file:
     get: { summary: 授权后读取原件 }
 
-  /documents/{id}/retry:
+  /api/v1/documents/{id}/retry:
     post: { summary: 失败重试 }
 
-  /search:
+  /api/v1/search:
     post:
       summary: 指定 agentId、query、scope；服务端限制资料和记忆授权
       parameters: [$ref: '#/components/parameters/IdempotencyKey']
 
-  /sessions:
+  /api/v1/sessions:
     get: { summary: 会话列表 }
     post: { summary: 创建会话 }
 
-  /sessions/{id}/messages:
+  /api/v1/sessions/{id}/messages:
     get: { summary: 会话历史 }
 
-  /sessions/{id}/turns:
+  /api/v1/sessions/{id}/turns:
     post:
       summary: 保存消息、创建运行，返回 runId；后端执行工具循环
       parameters: [$ref: '#/components/parameters/IdempotencyKey']
 
-  /runs/{id}/events:
+  /api/v1/runs/{id}/events:
     get:
       summary: SSE 事件流（支持 Last-Event-ID 重放）
       responses:
@@ -752,144 +752,144 @@ paths:
             text/event-stream:
               schema: { $ref: '#/components/schemas/StreamEvent' }
 
-  /runs/{id}/cancel:
+  /api/v1/runs/{id}/cancel:
     post: { summary: 取消运行 }
 
-  /proposals:
+  /api/v1/proposals:
     get: { summary: 待处理提案列表 }
 
-  /proposals/{id}:
+  /api/v1/proposals/{id}:
     get: { summary: 提案完整变化 }
     patch: { summary: 修改草稿 }
 
-  /proposals/{id}/confirm:
+  /api/v1/proposals/{id}/confirm:
     post:
       summary: 确认（含 payloadHash 和版本）
       parameters: [$ref: '#/components/parameters/IdempotencyKey']
 
-  /proposals/{id}/reject:
+  /api/v1/proposals/{id}/reject:
     post: { summary: 拒绝 }
 
-  /learning-profiles:
+  /api/v1/learning-profiles:
     get: { summary: 学习档案列表 }
     post: { summary: 创建学习档案 }
 
-  /learning-profiles/{id}:
+  /api/v1/learning-profiles/{id}:
     patch: { summary: 编辑学习档案 }
 
-  /learning-records:
+  /api/v1/learning-records:
     get: { summary: 学习记录列表 }
     post: { summary: 创建学习记录 }
 
-  /learning-records/{id}:
+  /api/v1/learning-records/{id}:
     patch: { summary: 纠错 }
     delete: { summary: 删除 }
 
-  /assessments:
+  /api/v1/assessments:
     get: { summary: 能力结论列表 }
 
-  /assessments/{id}/confirm:
+  /api/v1/assessments/{id}/confirm:
     post: { summary: 确认能力结论 }
 
-  /assessments/{id}/reject:
+  /api/v1/assessments/{id}/reject:
     post: { summary: 拒绝能力结论 }
 
-  /memories:
+  /api/v1/memories:
     get: { summary: 记忆列表 }
 
-  /memories/{id}:
+  /api/v1/memories/{id}:
     get: { summary: 记忆详情 }
     patch: { summary: 更正 }
     delete: { summary: 删除 }
 
-  /memories/{id}/regenerate:
+  /api/v1/memories/{id}/regenerate:
     post: { summary: 显式重新整理，重新检查来源和权限 }
 
-  /skills:
+  /api/v1/skills:
     get: { summary: 已安装 Skill 列表 }
 
-  /skills/import:
+  /api/v1/skills/import:
     post: { summary: 第三方导入预览 }
 
-  /skills/drafts:
+  /api/v1/skills/drafts:
     post: { summary: 聊天创建草稿 }
 
-  /skills/{id}:
+  /api/v1/skills/{id}:
     get: { summary: Skill 详情 }
     patch: { summary: 草稿修改 }
     delete: { summary: 卸载 }
 
-  /skills/{id}/install:
+  /api/v1/skills/{id}/install:
     post: { summary: 安装 }
 
-  /skills/{id}/enable:
+  /api/v1/skills/{id}/enable:
     post: { summary: 启用 }
 
-  /skills/{id}/disable:
+  /api/v1/skills/{id}/disable:
     post: { summary: 停用 }
 
-  /skills/{id}/versions:
+  /api/v1/skills/{id}/versions:
     post: { summary: 新版本预览/安装 }
 
-  /skills/{id}/rollback:
+  /api/v1/skills/{id}/rollback:
     post: { summary: 回退 }
 
-  /workflows:
+  /api/v1/workflows:
     get: { summary: 规则列表 }
     post: { summary: 创建规则 }
 
-  /workflows/{id}:
+  /api/v1/workflows/{id}:
     patch: { summary: 修改规则 }
     delete: { summary: 停用或归档 }
 
-  /workflows/{id}/run:
+  /api/v1/workflows/{id}/run:
     post:
       summary: 手动执行
       parameters: [$ref: '#/components/parameters/IdempotencyKey']
 
-  /workflow-runs:
+  /api/v1/workflow-runs:
     get: { summary: 运行历史 }
 
-  /workflow-runs/{id}/resume:
+  /api/v1/workflow-runs/{id}/resume:
     post: { summary: 恢复错过或中断的运行 }
 
-  /workflow-runs/{id}/skip:
+  /api/v1/workflow-runs/{id}/skip:
     post: { summary: 跳过 }
 
-  /jobs:
+  /api/v1/jobs:
     get: { summary: 导入/摘要进度 }
 
-  /jobs/{id}/resume:
+  /api/v1/jobs/{id}/resume:
     post: { summary: 显式恢复 }
 
-  /jobs/{id}/cancel:
+  /api/v1/jobs/{id}/cancel:
     post: { summary: 取消 }
 
-  /notifications:
+  /api/v1/notifications:
     get: { summary: 通知查询 }
 
-  /notifications/{id}:
+  /api/v1/notifications/{id}:
     patch: { summary: 已读 }
 
-  /imports/preview:
+  /api/v1/imports/preview:
     post: { summary: 旧数据迁移预览 }
 
-  /imports/commit:
+  /api/v1/imports/commit:
     post:
       summary: 确认提交迁移
       parameters: [$ref: '#/components/parameters/IdempotencyKey']
 
-  /imports/{id}:
+  /api/v1/imports/{id}:
     get: { summary: 迁移报告 }
 
-  /backups:
+  /api/v1/backups:
     get: { summary: 备份列表 }
     post:
       summary: 创建备份
       parameters: [$ref: '#/components/parameters/IdempotencyKey']
 
-  /backups/{id}/verify:
+  /api/v1/backups/{id}/verify:
     post: { summary: 完整性验证 }
 
-  /backups/{id}/restore:
+  /api/v1/backups/{id}/restore:
     post: { summary: 恢复到新目录，路径来自主进程选择令牌 }

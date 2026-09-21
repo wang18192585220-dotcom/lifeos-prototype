@@ -491,20 +491,18 @@ components:
 
     ProposalAction:
       type: object
-      required: [operation, entityType, before, after, reason]
+      required: [operation, reason]
       properties:
         operation:
           type: string
-          enum: [create, update, archive, cancel, complete]
-        entityType: { type: string }
+          description: 'entityType.verb，如 task.update / task.create / task.archive / task.complete / task.cancel / goal.update'
         entityId:
           type: string
           nullable: true
         expectedRevision:
           type: integer
           nullable: true
-        before: { type: object, additionalProperties: true }
-        after: { type: object, additionalProperties: true }
+        changes: { type: object, additionalProperties: true }
         reason: { type: string }
         sourceRefs:
           type: array

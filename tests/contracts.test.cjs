@@ -97,7 +97,7 @@ test('成功响应符合 Envelope（含 data）', async () => {
   });
 });
 
-test('S2 核心业务路由均在 openapi 中声明', () => {
+test('S2/S3 业务与 AI 路由均在 openapi 中声明', () => {
   const doc = loadOpenapi();
   const required = [
     ['/api/v1/goals', 'get'],
@@ -118,6 +118,24 @@ test('S2 核心业务路由均在 openapi 中声明', () => {
     ['/api/v1/tasks/{id}', 'delete'],
     ['/api/v1/today', 'get'],
     ['/api/v1/calendar', 'get'],
+    // S3 AI 与资料
+    ['/api/v1/model-profiles', 'get'],
+    ['/api/v1/model-profiles', 'post'],
+    ['/api/v1/model-profiles/{id}', 'patch'],
+    ['/api/v1/agents', 'get'],
+    ['/api/v1/agents', 'post'],
+    ['/api/v1/agents/{id}/grants', 'put'],
+    ['/api/v1/libraries', 'get'],
+    ['/api/v1/libraries', 'post'],
+    ['/api/v1/libraries/{id}/documents', 'post'],
+    ['/api/v1/documents/{id}', 'get'],
+    ['/api/v1/search', 'post'],
+    ['/api/v1/sessions', 'post'],
+    ['/api/v1/sessions/{id}/messages', 'get'],
+    ['/api/v1/sessions/{id}/turns', 'post'],
+    ['/api/v1/proposals', 'get'],
+    ['/api/v1/proposals/{id}/confirm', 'post'],
+    ['/api/v1/proposals/{id}/reject', 'post'],
   ];
   for (const [p, m] of required) {
     assert.ok(doc.paths[p] && doc.paths[p][m], `openapi 应声明 ${m.toUpperCase()} ${p}`);

@@ -11,4 +11,5 @@ module.exports = [
   require('./0005_knowledge_chunks.js'),
   require('./0006_skills_memory_learning_workflows.js'),
   require('./0007_memory_dedup_key.js'),
+  require('./0008_import_batches.js'),
 ];

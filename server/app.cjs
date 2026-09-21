@@ -69,13 +69,49 @@ function createApp(deps = {}) {
   });
 
   app.get('/api/v1/bootstrap', (req, res) => {
+    const vault = req.lifeos.services.vault;
+    const opened = !!(vault && vault.status().opened);
     res.json({
       data: {
-        initialized: false,
-        vaultStatus: 'none',
+        initialized: opened,
+        vaultStatus: opened ? 'open' : 'none',
         capabilities: { sqlite: true, fts5: true },
       },
     });
+  });
+
+  app.get('/api/v1/vault/status', (req, res) => {
+    const vault = req.lifeos.services.vault;
+    res.json({ data: vault ? vault.status() : { opened: false, root: null } });
+  });
+
+  app.post('/api/v1/vault/open', (req, res) => {
+    const vault = req.lifeos.services.vault;
+    if (!vault) {
+      return res.status(503).json({
+        error: { code: 'not_available', message: 'Vault 服务不可用', requestId: requestId() },
+      });
+    }
+    const token = req.body && req.body.token;
+    const root = token ? vault.consumePathToken(token) : null;
+    if (!root) {
+      return res.status(422).json({
+        error: { code: 'invalid_token', message: '无效或过期的 Vault 选择令牌', requestId: requestId() },
+      });
+    }
+    try {
+      vault.open(root);
+      res.json({ data: vault.status() });
+    } catch (e) {
+      if (e && e.code === 'VAULT_LOCKED') {
+        return res.status(409).json({
+          error: { code: 'vault_locked', message: e.message, requestId: requestId() },
+        });
+      }
+      res.status(500).json({
+        error: { code: 'vault_open_failed', message: '无法打开 Vault', requestId: requestId() },
+      });
+    }
   });
 
   // 未知 API → JSON 404（不暴露 HTML 或内部路径）

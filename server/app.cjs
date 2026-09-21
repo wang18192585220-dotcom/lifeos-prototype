@@ -10,6 +10,7 @@
 const express = require('express');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { coreRoutes } = require('./routes/core');
 
 function generateToken() {
   return crypto.randomBytes(32).toString('hex');
@@ -113,6 +114,9 @@ function createApp(deps = {}) {
       });
     }
   });
+
+  // 核心业务路由（goals/projects/tasks/today/calendar）
+  app.use('/api/v1', coreRoutes());
 
   // 未知 API → JSON 404（仅 /api/v1；不暴露 HTML 或内部路径）
   app.use('/api/v1', (req, res) => {

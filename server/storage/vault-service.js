@@ -78,9 +78,12 @@ class VaultService {
       const { MemoryService } = require('../modules/memory');
       const { SkillService } = require('../modules/skills');
       const { WorkflowService } = require('../modules/workflows');
+      const { seedBuiltinSkills } = require('../../skills/builtin');
       const { Repository } = require('../modules/core/repository');
 
       const core = new CoreService(this._handle.adapter);
+      const skills = new SkillService(this._handle.adapter);
+      seedBuiltinSkills(skills);
       this._services = {
         core,
         knowledge: new KnowledgeService(this._handle.adapter, this._handle.root),
@@ -88,7 +91,7 @@ class VaultService {
         proposals: new ProposalService(this._handle.adapter, core),
         learning: new LearningService(this._handle.adapter),
         memory: new MemoryService(this._handle.adapter),
-        skills: new SkillService(this._handle.adapter),
+        skills,
         workflows: new WorkflowService(this._handle.adapter),
         agents: new Repository(this._handle.adapter, 'agents', {
           name: 'name',

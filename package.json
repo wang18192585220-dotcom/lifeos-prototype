@@ -17,7 +17,7 @@
     "test:knowledge": "node --test tests/knowledge.test.cjs",
     "test:learning": "node --test tests/learning.test.cjs",
     "test:memory": "node --test tests/memory.test.cjs",
-    "test:skills": "node --test tests/skills.test.cjs",
+    "test:skills": "node --test tests/skills.test.cjs tests/builtin-skills.test.cjs",
     "test:workflows": "node --test tests/workflows.test.cjs",
     "test:s4": "node --test tests/s4-routes.test.cjs",
     "test:desktop": "node --test tests/desktop.test.cjs",

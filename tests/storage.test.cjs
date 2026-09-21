@@ -11,6 +11,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { openVault } = require('../server/storage/vault');
 const paths = require('../server/platform/paths');
+const migrations = require('../server/storage/migrations');
 
 function tmpVault() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'lifeos-test-'));
@@ -73,8 +74,9 @@ test('迁移幂等：重开不重复执行', () => {
   v.close();
   v = openVault(dir);
   try {
-    const n = v.adapter.prepare('SELECT COUNT(*) AS n FROM _schema_migrations').get().n;
-    assert.strictEqual(n, 1, '0001 只应用一次');
+    const rows = v.adapter.prepare('SELECT version FROM _schema_migrations ORDER BY version').all();
+    const expected = migrations.map((m) => m.version).sort((a, b) => a - b);
+    assert.deepStrictEqual(rows.map((r) => r.version), expected, '每个迁移只应用一次');
   } finally {
     v.close();
     fs.rmSync(dir, { recursive: true, force: true });

@@ -21,8 +21,8 @@
 | ID | 阶段 | 依赖 | 负责人 | 状态 | 变更文件 | 验证 | 下一步 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | T00 | S0 | 无 | 主 Agent | done | tools/runtime-check.cjs, docs/*, package.json | runtime-check 双运行时 7/7；openapi 79 路径 | 已提交 99ff4e6，进入 S1 |
-| T10 | S1 | T00 | 存储 Agent | in_progress | server/storage, server/platform | test:storage | Vault 初始化/迁移/事务/outbox/锁 |
-| T11 | S1 | T00 | 桌面前端 Agent | not_started | — | — | — |
+| T10 | S1 | T00 | 存储 Agent | done | server/storage, server/platform | test:storage 6/6、test:content 4/4 | Vault 初始化/迁移/事务/outbox/锁/内容协议 |
+| T11 | S1 | T00 | 桌面前端 Agent | in_progress | desktop/, renderer/, tests/desktop.test.cjs | test:desktop（子 Agent 11954a45 执行中） | 待集成 |
 | T12 | S1 | T10,T11 | 主 Agent | not_started | — | — | — |
 | T20 | S2 | T12 | 业务 Agent | not_started | — | — | — |
 | T21 | S2 | T12 | 前端 Agent | not_started | — | — | — |
@@ -55,8 +55,8 @@
 
 ## 下一步（S1）
 
-1. 建立目录骨架与 StorageAdapter（node:sqlite，模块级 backup）。
-2. createApp 应用工厂：解耦启动/定时器/静态服务；未知 API 返回 JSON 404。
-3. Electron 主进程 + 受限 preload bridge + 单实例锁 + 退出生命周期。
-4. Vault 写入协议（staging→原子重命名→事务→outbox）。
-5. test:storage 跑通，提交 S1。
+1. ~~目录骨架 + StorageAdapter~~ 已完成（test:storage 6/6）。
+2. ~~createApp 应用工厂 + 本地服务隔离~~ 已完成（test:security 6/6）。
+3. ~~Vault 写入协议（staging→原子重命名→outbox）~~ 已完成（test:content 4/4）。
+4. Electron 主进程 + 受限 preload bridge + 单实例锁 + 退出生命周期（T11，子 Agent 执行中）。
+5. T12 集成：vault open 流程、test:contracts、全部测试聚合，提交 S1。

@@ -27,9 +27,9 @@
 | T20 | S2 | T12 | 业务 Agent | done | server/modules/core, server/routes/core.js | test:core 22/22（含路由集成） | 已提交 |
 | T21 | S2 | T12 | 前端 Agent | done | renderer/pages、renderer/state、renderer/components | Electron 冒烟 SMOKE_OK；test:desktop 4/4 | 主 Agent 修复导出名不匹配 |
 | T22 | S2 | T20,T21 | 主 Agent | done | renderer/main.js（导入别名）、tests | 全量 50 项测试通过；跨页面共用 store + 同一数据源 | 进入 S3 |
-| T30 | S3 | T22 | Agent 编排负责人 | not_started | — | — | — |
-| T31 | S3 | T22 | 知识负责人 | not_started | — | — | — |
-| T32 | S3 | T30,T31 | 前端负责人 | not_started | — | — | — |
+| T30 | S3 | T22 | Agent 编排负责人 | done | server/modules/agent, server/routes/agent.js, server/platform/credentials.js | test:agent 18/18（模型适配/会话/提案/工具循环/turn 路由） | 已提交 |
+| T31 | S3 | T22 | 知识负责人 | done | server/modules/knowledge, 迁移 0005 | test:knowledge 7/7（导入/切片/FTS5/授权） | 已提交 |
+| T32 | S3 | T30,T31 | 前端负责人 | in_progress | renderer/pages/chat.js、settings.js、components/proposal.js | 子 Agent c7a1f595 执行中 | 待集成 |
 | T33 | S3 | T32 | 主 Agent | not_started | — | — | — |
 | T40 | S4 | T33 | Skill 负责人 | not_started | — | — | — |
 | T41 | S4 | T33 | 记忆负责人 | not_started | — | — | — |

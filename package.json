@@ -8,6 +8,7 @@
     "runtime-check": "node tools/runtime-check.cjs",
     "runtime-check:electron": "electron tools/runtime-check.cjs",
     "test:storage": "node --test tests/storage.test.cjs",
+    "test:security": "node --test tests/security.test.cjs",
     "start": "node server/server.js",
     "dev": "node server/server.js"
   },

@@ -1,52 +1,20 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
+'use strict';
 
-const chatRoute = require('./routes/chat');
-const configRoute = require('./routes/agent-config');
-const knowledgeRoute = require('./routes/knowledge');
-const skillsRoute = require('./routes/skills');
-const workflowsRoute = require('./routes/workflows');
-const { initDB } = require('./services/db');
-const { startWorkflowEngine } = require('./services/workflow');
+/**
+ * 独立调试启动入口（仅开发用，README 17.1 dev:server）。
+ * - 不连接默认真实 Vault，不运行定时器。
+ * - 会话令牌随进程生成并打印到控制台。
+ * - 不暴露仓库根目录或 server/data。
+ */
+const { createApp, generateToken } = require('./app.cjs');
 
-const app = express();
-const PORT = process.env.LIFEOS_PORT || 4174;
+const PORT = Number(process.env.LIFEOS_PORT || 4174);
+const HOST = '127.0.0.1';
+const token = process.env.LIFEOS_TOKEN || generateToken();
 
-// Ensure data directories exist
-const dataDir = path.join(__dirname, 'data');
-const uploadsDir = path.join(dataDir, 'uploads');
-[uploadsDir].forEach(dir => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
+const app = createApp({ token, staticDir: null });
 
-// Init SQLite
-initDB();
-
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-
-// API routes
-app.use('/api/chat', chatRoute);
-app.use('/api/agent-config', configRoute);
-app.use('/api/knowledge', knowledgeRoute);
-app.use('/api/skills', skillsRoute);
-app.use('/api/workflows', workflowsRoute);
-
-// Serve static frontend (index.html)
-app.use(express.static(path.join(__dirname, '..')));
-
-// SPA fallback
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'index.html'));
-});
-
-// Start workflow scheduler
-startWorkflowEngine();
-
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`LifeOS server running at http://127.0.0.1:${PORT}`);
-  console.log(`API endpoints: /api/chat, /api/agent-config, /api/knowledge, /api/skills, /api/workflows`);
+app.listen(PORT, HOST, () => {
+  console.log(`LifeOS 调试后端运行于 http://${HOST}:${PORT}`);
+  console.log(`本地令牌: ${token}`);
 });

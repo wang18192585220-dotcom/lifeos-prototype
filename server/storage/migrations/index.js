@@ -6,4 +6,5 @@
 module.exports = [
   require('./0001_init.js'),
   require('./0002_file_outbox.js'),
+  require('./0003_core_tables.js'),
 ];

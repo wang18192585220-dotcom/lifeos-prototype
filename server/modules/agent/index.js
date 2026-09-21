@@ -6,5 +6,7 @@
 const { ChatClient, modelError } = require('./model');
 const { SessionService } = require('./session');
 const { ProposalService } = require('./proposal');
+const { ToolRegistry, buildTools } = require('./tools');
+const { Orchestrator } = require('./orchestrator');
 
-module.exports = { ChatClient, modelError, SessionService, ProposalService };
+module.exports = { ChatClient, modelError, SessionService, ProposalService, ToolRegistry, buildTools, Orchestrator };

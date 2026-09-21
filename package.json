@@ -13,7 +13,7 @@
     "test:vault": "node --test tests/vault.test.cjs",
     "test:contracts": "node --test tests/contracts.test.cjs",
     "test:core": "node --test tests/domain.test.cjs tests/core.test.cjs tests/core-routes.test.cjs",
-    "test:agent": "node --test tests/agent.test.cjs tests/proposal.test.cjs",
+    "test:agent": "node --test tests/agent.test.cjs tests/proposal.test.cjs tests/orchestrator.test.cjs",
     "test:desktop": "node --test tests/desktop.test.cjs",
     "test": "node --test \"tests/*.test.cjs\"",
     "start": "node server/server.js",

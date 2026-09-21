@@ -1,7 +1,7 @@
 /**
  * 设置页（S3 T32）：模型配置、角色（含资料库授权）、资料库（含文本导入）。
  */
-import { post, put } from '../api/client.js';
+import { get, post, put } from '../api/client.js';
 import * as store from '../state/store.js';
 import { el, clear, errorMessage } from '../components/ui.js';
 
@@ -156,8 +156,58 @@ export async function render(container) {
   });
   libSection.append(libForm, libErr, libList);
 
-  container.append(mpSection, agSection, libSection);
+  // ---- Skills ----
+  const skSection = section('Skills');
+  const skList = el('div', { class: 'item-list' });
+  async function renderSkills() {
+    clear(skList);
+    const res = await get('/api/v1/skills');
+    for (const s of res.data || []) {
+      const row = el('div', { class: 'item' });
+      row.append(el('span', { class: 'item-title', text: `${s.name} · ${s.installStatus}${s.enabled ? ' · 启用' : ''}` }));
+      const toggleBtn = el('button', { type: 'button', class: 'btn-sm', text: s.enabled ? '停用' : '启用' });
+      toggleBtn.addEventListener('click', async () => {
+        try {
+          await post(`/api/v1/skills/${s.id}/${s.enabled ? 'disable' : 'enable'}`, {});
+          await renderSkills();
+        } catch (err) {
+          showError(skErr, errorMessage(err));
+        }
+      });
+      row.append(toggleBtn);
+      skList.append(row);
+    }
+  }
+  const skErr = errBox();
+  skSection.append(skErr, skList);
+
+  // ---- 工作流 ----
+  const wfSection = section('工作流');
+  const wfList = el('div', { class: 'item-list' });
+  async function renderWorkflows() {
+    clear(wfList);
+    const res = await get('/api/v1/workflows');
+    for (const w of res.data || []) {
+      const row = el('div', { class: 'item' });
+      row.append(el('span', { class: 'item-title', text: `工作流（${w.enabled ? '启用' : '停用'}）` }));
+      const runBtn = el('button', { type: 'button', class: 'btn-sm', text: '执行一次' });
+      runBtn.addEventListener('click', async () => {
+        try {
+          await post(`/api/v1/workflows/${w.id}/run`, {});
+        } catch (err) {
+          showError(skErr, errorMessage(err));
+        }
+      });
+      row.append(runBtn);
+      wfList.append(row);
+    }
+  }
+  wfSection.append(wfList);
+
+  container.append(mpSection, agSection, libSection, skSection, wfSection);
   await renderProfiles();
   await renderAgents();
   await renderLibraries();
+  await renderSkills();
+  await renderWorkflows();
 }

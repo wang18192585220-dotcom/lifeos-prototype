@@ -5,6 +5,8 @@ import { render as renderGoals } from './pages/goals.js';
 import { render as renderProjects } from './pages/projects.js';
 import { render as renderChat } from './pages/chat.js';
 import { render as renderSettings } from './pages/settings.js';
+import { render as renderLearning } from './pages/learning.js';
+import { render as renderMemory } from './pages/memory.js';
 
 // baseUrl 只保存在内存变量；令牌由 preload 持有，不进入 renderer（README 4.2）。
 const session = { baseUrl: null };
@@ -16,6 +18,8 @@ const ROUTES = {
   projects: { title: '项目', render: renderProjects },
   chat: { title: '聊天', render: renderChat },
   settings: { title: '设置', render: renderSettings },
+  learning: { title: '学习', render: renderLearning },
+  memory: { title: '记忆', render: renderMemory },
 };
 
 const statusEl = document.getElementById('status');

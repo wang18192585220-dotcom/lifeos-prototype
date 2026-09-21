@@ -3,15 +3,15 @@
 > 主开发 Agent 维护。每任务记录 id、dependsOn、owner、status、changedFiles、verification、blocker、nextAction。
 > 状态：not_started / in_progress / review / done / blocked。
 
-更新：2026-09-21（S0 进行中）
+更新：2026-09-21（S1 完成）
 
 ## 阶段总览
 
 | 阶段 | 状态 | 放行条件 |
 | --- | --- | --- |
 | S0 基线与契约 | done | Node 与 Electron 的数据库能力验证通过；安装依赖和运行步骤可复现 |
-| S1 桌面与存储 | in_progress | 重启不丢数据；越界访问被拒；文件发布失败可修复 |
-| S2 通用业务闭环 | not_started | 同一任务在各页面一致；版本冲突可见；无演示数据混入真库 |
+| S1 桌面与存储 | done | 重启不丢数据；越界访问被拒；文件发布失败可修复 |
+| S2 通用业务闭环 | in_progress | 同一任务在各页面一致；版本冲突可见；无演示数据混入真库 |
 | S3 AI 与资料 | not_started | AI 不能绕过确认；拒绝不落地；授权隔离及断线恢复通过 |
 | S4 Skills 与学习 | not_started | 完整学习场景通过；撤权无泄漏；能力判断待确认；错过不补跑 |
 | S5 迁移与交付 | not_started | 干净环境安装启动、恢复演练、端到端场景通过，报告真实限制 |
@@ -22,8 +22,8 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | T00 | S0 | 无 | 主 Agent | done | tools/runtime-check.cjs, docs/*, package.json | runtime-check 双运行时 7/7；openapi 79 路径 | 已提交 99ff4e6，进入 S1 |
 | T10 | S1 | T00 | 存储 Agent | done | server/storage, server/platform | test:storage 6/6、test:content 4/4 | Vault 初始化/迁移/事务/outbox/锁/内容协议 |
-| T11 | S1 | T00 | 桌面前端 Agent | in_progress | desktop/, renderer/, tests/desktop.test.cjs | test:desktop（子 Agent 11954a45 执行中） | 待集成 |
-| T12 | S1 | T10,T11 | 主 Agent | not_started | — | — | — |
+| T11 | S1 | T00 | 桌面前端 Agent | done | desktop/, renderer/, tests/desktop.test.cjs | test:desktop 4/4（含 Electron 冒烟） | 主 Agent 集成并修复 /api 命名空间冲突 |
+| T12 | S1 | T10,T11 | 主 Agent | done | server/app.cjs, server/storage/vault-service.js, tests/{contracts,vault,desktop}.test.cjs | test:contracts 4/4、test:vault 3/3 | 全部 35 项测试通过 |
 | T20 | S2 | T12 | 业务 Agent | not_started | — | — | — |
 | T21 | S2 | T12 | 前端 Agent | not_started | — | — | — |
 | T22 | S2 | T20,T21 | 主 Agent | not_started | — | — | — |
@@ -53,10 +53,9 @@
 
 - 无。GitHub remote 待用户提供（不影响 S0 推进）。
 
-## 下一步（S1）
+## 下一步（S2）
 
-1. ~~目录骨架 + StorageAdapter~~ 已完成（test:storage 6/6）。
-2. ~~createApp 应用工厂 + 本地服务隔离~~ 已完成（test:security 6/6）。
-3. ~~Vault 写入协议（staging→原子重命名→outbox）~~ 已完成（test:content 4/4）。
-4. Electron 主进程 + 受限 preload bridge + 单实例锁 + 退出生命周期（T11，子 Agent 执行中）。
-5. T12 集成：vault open 流程、test:contracts、全部测试聚合，提交 S1。
+1. 核心业务表迁移（goals/projects/tasks/stages/milestones/plans）。
+2. server/modules/core：目标/项目/任务/计划仓储与日期规则（revision 乐观锁）。
+3. renderer 页面接入：今日/日历/目标/项目，共用同一 tasks 数据源。
+4. test:core 扩展、跨页面一致性与版本冲突验证。

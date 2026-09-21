@@ -1,0 +1,97 @@
+:root {
+  --bg: #10141c;
+  --panel: #1a2130;
+  --text: #e6e9f0;
+  --muted: #8b93a7;
+  --accent: #4f8cff;
+  --ok: #2fbf71;
+  --err: #e5534b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #262f42;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.status {
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.status.connected {
+  color: var(--ok);
+  background: rgba(47, 191, 113, 0.12);
+}
+
+.status.disconnected {
+  color: var(--err);
+  background: rgba(229, 83, 75, 0.12);
+}
+
+.content {
+  padding: 20px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid #262f42;
+  border-radius: 10px;
+  padding: 18px 20px;
+  max-width: 560px;
+}
+
+.panel h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+.vault-path {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  word-break: break-all;
+}

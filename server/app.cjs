@@ -60,8 +60,8 @@ function createApp(deps = {}) {
     next();
   });
 
-  // API：令牌门禁
-  app.use('/api', tokenAuth(token));
+  // API：令牌门禁（仅 /api/v1；renderer/api/ 的客户端源码经静态服务，不在 API 命名空间内）
+  app.use('/api/v1', tokenAuth(token));
 
   // API 路由（S1 最小集，随阶段扩展）
   app.get('/api/v1/health', (req, res) => {
@@ -114,8 +114,8 @@ function createApp(deps = {}) {
     }
   });
 
-  // 未知 API → JSON 404（不暴露 HTML 或内部路径）
-  app.use('/api', (req, res) => {
+  // 未知 API → JSON 404（仅 /api/v1；不暴露 HTML 或内部路径）
+  app.use('/api/v1', (req, res) => {
     res.status(404).json({
       error: { code: 'not_found', message: 'Not Found', requestId: requestId() },
     });

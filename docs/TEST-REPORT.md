@@ -26,6 +26,26 @@
 - 真实模型提供商联调：未进行（无 API Key），不阻塞，最终交付单独列明。
 - npm audit 报 4 个 moderate 漏洞（来自旧原型依赖树），S1 重构依赖时处理。
 
-## 后续测试脚本
+## S1 存储 / 服务 / 桌面测试
 
-各模块测试脚本（`test:storage` / `test:core` / `test:agent` / `test:knowledge` / `test:memory` / `test:skills` / `test:learning` / `test:workflows` / `test:migration` / `test:backup` / `test:e2e`）随对应阶段实现落地，当前均未实现，不使用空测试或强制 exit 0 充数。
+`npm test`（35 项全绿，win32 x64，Node 24.19 + Electron 44.4.3）：
+
+| 套件 | 命令 | 结果 | 覆盖 |
+| --- | --- | --- | --- |
+| test:storage | `npm run test:storage` | 6/6 | 初始化/迁移、重启不丢、事务回滚、迁移幂等、进程锁、备份 |
+| test:security | `npm run test:security` | 6/6 | 无令牌 401、JSON 404、只服务构建目录、不暴露仓库根/点文件 |
+| test:content | `npm run test:content` | 4/4 | 内容不可变写入、outbox 发布失败可重试、单项失败不阻塞 |
+| test:vault | `npm run test:vault` | 3/3 | 短期令牌打开+重启持久化、令牌一次性、占用 409 |
+| test:contracts | `npm run test:contracts` | 4/4 | openapi↔路由一致、成功/错误信封契约 |
+| test:core | `npm run test:core` | 8/8 | Zod schema、任务/里程碑一致性、完成/重开、完成率 |
+| test:desktop | `npm run test:desktop` | 4/4 | Electron --smoke 冒烟（SMOKE_OK）、bridge 白名单、无令牌落 renderer |
+
+失败与修复：
+- Electron 冒烟超时：`renderer/api/client.js` 映射到 `/api/client.js` 被令牌门禁拦下 → 401 → 模块加载失败。令牌门禁与 JSON 404 收窄到 `/api/v1`（DECISIONS D-006）后通过。
+- Windows `fsync` 只读句柄 EPERM → 改可写句柄（content.js）。
+- desktop 静态检查误匹配注释中的 `XMLHttpRequest`/`localStorage` → 正则改为检测实际调用。
+
+未验证项：
+- 打包后的安装版（`dist:win`）S5 再验证。
+- 真实模型提供商联调：未进行（无 API Key），不阻塞。
+- npm audit 报 moderate 漏洞（旧原型依赖树），S2 起替换旧依赖时处理。

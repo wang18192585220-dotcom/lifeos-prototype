@@ -25,3 +25,15 @@
 - 按 README 第 14 节：`desktop/`、`renderer/`、`server/`（domain/storage/modules/platform）、`skills/builtin/`、`contracts/`、`tools/`、`tests/`、`docs/`。
 - 保留 CommonJS；业务模块配 JSDoc，不强制全量 TypeScript 转换。
 - 只有主 Agent 修改 package.json / lockfile / 全局路由装配 / renderer/main.js / 契约 / 迁移编号注册表。
+
+## D-005 内部模块用 .js、入口用 .cjs（2026-09-21）
+
+- 事实：`package.json` 为 `"type": "commonjs"`，Node 的 `require` 默认只补 `.js/.json/.node`，不补 `.cjs`。
+- 决策：`server/` 内部模块（domain/storage/platform/modules）一律 `.js`；顶层入口（`desktop/main.cjs`、`desktop/preload.cjs`、`server/app.cjs`、`tools/*.cjs`）与测试（`tests/*.test.cjs`）用 `.cjs`。
+- 证据：`require('../server/storage/vault')`（无扩展名）在文件为 `.cjs` 时报 MODULE_NOT_FOUND。
+
+## D-006 API 命名空间限定 /api/v1（2026-09-21）
+
+- 事实：renderer 源码 `renderer/api/client.js` 经静态服务映射为 URL `/api/client.js`，与 `/api` 路由命名空间冲突，被令牌门禁拦下返回 401，导致模块加载失败。
+- 决策：令牌门禁与未知 API 的 JSON 404 从 `app.use('/api', …)` 收窄为 `app.use('/api/v1', …)`；`renderer/api/` 的客户端源码作为静态资源正常服务。
+- 理由：契约明确「所有新接口使用 /api/v1」；renderer 源码目录名 `api/` 属于前端源文件组织，与后端 API 命名空间解耦。

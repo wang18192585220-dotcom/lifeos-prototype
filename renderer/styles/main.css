@@ -1,6 +1,8 @@
 :root {
   --bg: #10141c;
   --panel: #1a2130;
+  --panel-2: #232d40;
+  --border: #262f42;
   --text: #e6e9f0;
   --muted: #8b93a7;
   --accent: #4f8cff;
@@ -26,12 +28,81 @@ body {
   font-size: 15px;
 }
 
+/* ---- 布局：侧栏 + 主区 ---- */
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 200px;
+  flex: 0 0 auto;
+  background: #121828;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 12px;
+}
+
+.brand {
+  font-size: 18px;
+  font-weight: 700;
+  padding: 4px 8px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav a {
+  display: block;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 9px 12px;
+  border-radius: 7px;
+  font-size: 14px;
+}
+
+.nav a:hover {
+  color: var(--text);
+  background: var(--panel);
+}
+
+.nav a.active {
+  color: #fff;
+  background: var(--accent);
+}
+
+.vault-box {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.vault-path {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- 顶栏与状态 ---- */
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  border-bottom: 1px solid #262f42;
+  border-bottom: 1px solid var(--border);
 }
 
 .topbar h1 {
@@ -57,22 +128,66 @@ body {
 }
 
 .content {
+  flex: 1 1 auto;
+  overflow: auto;
   padding: 20px;
 }
 
-.panel {
-  background: var(--panel);
-  border: 1px solid #262f42;
-  border-radius: 10px;
-  padding: 18px 20px;
-  max-width: 560px;
+/* ---- 页面通用 ---- */
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 
-.panel h2 {
-  margin: 0 0 14px;
-  font-size: 15px;
-  color: var(--muted);
+.page-head h2 {
+  margin: 0;
+  font-size: 16px;
   font-weight: 600;
+}
+
+.inline-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ---- 表单与按钮 ---- */
+.add-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  max-width: 760px;
+}
+
+.input {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.input.grow {
+  flex: 1 1 160px;
+  min-width: 140px;
 }
 
 button {
@@ -89,9 +204,178 @@ button:hover {
   filter: brightness(1.08);
 }
 
-.vault-path {
-  margin: 14px 0 0;
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+  filter: none;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 13px;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-sm:hover {
+  filter: brightness(1.1);
+}
+
+.btn-sm.danger {
+  color: var(--err);
+}
+
+/* ---- 错误与空态 ---- */
+.form-error {
+  display: none;
+  color: var(--err);
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+
+.form-error.visible {
+  display: block;
+}
+
+.page-error {
+  color: var(--err);
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-width: 760px;
+}
+
+.empty {
   color: var(--muted);
   font-size: 13px;
-  word-break: break-all;
+  margin: 8px 0;
+}
+
+/* ---- 任务列表 ---- */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 760px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.task-toggle {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.task-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.task-title.done {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.chip {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  padding: 1px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ---- 实体列表（目标/项目） ---- */
+.item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 760px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.item-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---- 日历 ---- */
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.week-label {
+  color: var(--muted);
+  font-size: 13px;
+  min-width: 190px;
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.cal-cell {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-height: 140px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cal-cell.today {
+  border-color: var(--accent);
+}
+
+.cal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cal-date {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cal-task {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-task .task-title {
+  font-size: 13px;
 }

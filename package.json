@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "LifeOS · 个人智能操作系统 - 本地后端",
   "type": "commonjs",
-  "main": "server/server.js",
+  "main": "desktop/main.cjs",
   "scripts": {
     "runtime-check": "node tools/runtime-check.cjs",
     "runtime-check:electron": "electron tools/runtime-check.cjs",
@@ -26,7 +26,9 @@
     "test:desktop": "node --test tests/desktop.test.cjs",
     "test": "node --test \"tests/*.test.cjs\"",
     "start": "node server/server.js",
-    "dev": "node server/server.js"
+    "dev": "node server/server.js",
+    "pack": "electron-builder --dir",
+    "dist:win": "electron-builder --win nsis --x64"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -34,11 +36,30 @@
     "mammoth": "^1.8.0",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
-    "pdf-parse": "^1.1.1"
+    "pdf-parse": "^1.1.1",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "electron": "44.4.3",
-    "js-yaml": "^5.4.2",
-    "zod": "^4.6.5"
+    "electron-builder": "^26.0.12",
+    "js-yaml": "^5.4.2"
+  },
+  "build": {
+    "appId": "com.lifeos.app",
+    "productName": "LifeOS",
+    "files": [
+      "desktop/**/*",
+      "renderer/**/*",
+      "server/**/*",
+      "skills/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "arch": ["x64"]
+    }
   }
 }

@@ -96,3 +96,30 @@ test('成功响应符合 Envelope（含 data）', async () => {
     assert.ok('data' in body, '成功响应含 data');
   });
 });
+
+test('S2 核心业务路由均在 openapi 中声明', () => {
+  const doc = loadOpenapi();
+  const required = [
+    ['/api/v1/goals', 'get'],
+    ['/api/v1/goals', 'post'],
+    ['/api/v1/goals/{id}', 'patch'],
+    ['/api/v1/goals/{id}', 'delete'],
+    ['/api/v1/projects', 'get'],
+    ['/api/v1/projects', 'post'],
+    ['/api/v1/projects/{id}', 'patch'],
+    ['/api/v1/projects/{id}/stages', 'post'],
+    ['/api/v1/projects/{id}/milestones', 'post'],
+    ['/api/v1/projects/{id}/plan', 'get'],
+    ['/api/v1/projects/{id}/plan-versions', 'post'],
+    ['/api/v1/plans/{id}/versions', 'get'],
+    ['/api/v1/tasks', 'get'],
+    ['/api/v1/tasks', 'post'],
+    ['/api/v1/tasks/{id}', 'patch'],
+    ['/api/v1/tasks/{id}', 'delete'],
+    ['/api/v1/today', 'get'],
+    ['/api/v1/calendar', 'get'],
+  ];
+  for (const [p, m] of required) {
+    assert.ok(doc.paths[p] && doc.paths[p][m], `openapi 应声明 ${m.toUpperCase()} ${p}`);
+  }
+});

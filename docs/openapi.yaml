@@ -1,0 +1,895 @@
+openapi: 3.1.0
+info:
+  title: LifeOS API
+  version: 0.1.0
+  description: |
+    LifeOS 本地单机服务接口契约。所有业务写入经此服务；AI 修改业务仅产生提案（proposal），确认后由服务执行。
+    本契约随阶段演进：S0 冻结错误格式、分页、revision、幂等头与实体/枚举骨架；各阶段补齐具体路径与字段。
+servers:
+  - url: http://127.0.0.1:{port}
+    description: 本地服务，端口由主进程分配，令牌不落盘。
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: 本地随机会话令牌，由 Electron 主进程注入请求头，不放 URL。
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: 新增及会产生副作用的 POST 使用；同键重复请求返回原结果，同键不同内容返回 409。
+      schema:
+        type: string
+
+  schemas:
+    # ---------- 通用 ----------
+    Meta:
+      type: object
+      properties:
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1 }
+        total: { type: integer, minimum: 0 }
+
+    Error:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+        requestId: { type: string }
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error: { $ref: '#/components/schemas/Error' }
+
+    Envelope:
+      type: object
+      required: [data]
+      properties:
+        data: {}
+        meta: { $ref: '#/components/schemas/Meta' }
+
+    PatchBody:
+      type: object
+      required: [expectedRevision]
+      properties:
+        expectedRevision: { type: integer, minimum: 1 }
+        changes:
+          type: object
+          additionalProperties: true
+
+    BaseEntity:
+      type: object
+      required: [id, revision, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        revision: { type: integer, minimum: 1 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    # ---------- 枚举 ----------
+    GoalStatus:
+      type: string
+      enum: [active, completed, archived]
+
+    ProjectStatus:
+      type: string
+      enum: [active, completed, archived]
+
+    TaskStatus:
+      type: string
+      enum: [todo, in_progress, done, cancelled]
+
+    Priority:
+      type: string
+      enum: [low, normal, high]
+
+    ProgressMode:
+      type: string
+      enum: [manual, from_projects]
+
+    ProposalStatus:
+      type: string
+      enum: [pending, applied, rejected, expired, conflict]
+
+    AssessmentStatus:
+      type: string
+      enum: [pending, confirmed, rejected, superseded]
+
+    DocumentStatus:
+      type: string
+      enum: [uploaded, extracting, ready, failed]
+
+    WorkflowRunStatus:
+      type: string
+      enum: [scheduled, running, succeeded, failed, missed, cancelled]
+
+    JobStatus:
+      type: string
+      enum: [pending, running, succeeded, failed, interrupted, cancelled]
+
+    MemoryFactStatus:
+      type: string
+      enum: [confirmed, inferred, pending]
+
+    LearningPurpose:
+      type: string
+      enum: [exam_preparation, general, other]
+
+    # ---------- 业务实体 ----------
+    Goal:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [title, area, status, progressMode]
+          properties:
+            title: { type: string }
+            description: { type: string }
+            area: { type: string }
+            targetDate:
+              type: string
+              format: date
+              nullable: true
+            status: { $ref: '#/components/schemas/GoalStatus' }
+            progressMode: { $ref: '#/components/schemas/ProgressMode' }
+            manualProgress:
+              type: number
+              minimum: 0
+              maximum: 100
+
+    Project:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [title, area, status]
+          properties:
+            title: { type: string }
+            area: { type: string }
+            goalId:
+              type: string
+              format: uuid
+              nullable: true
+            status: { $ref: '#/components/schemas/ProjectStatus' }
+            description: { type: string }
+
+    Stage:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [projectId, order]
+          properties:
+            projectId: { type: string, format: uuid }
+            order: { type: integer, minimum: 0 }
+            title: { type: string }
+            description: { type: string }
+            targetDate:
+              type: string
+              format: date
+              nullable: true
+
+    Milestone:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [projectId, order]
+          properties:
+            projectId: { type: string, format: uuid }
+            order: { type: integer, minimum: 0 }
+            title: { type: string }
+            description: { type: string }
+            targetDate:
+              type: string
+              format: date
+              nullable: true
+            completedAt:
+              type: string
+              format: date-time
+              nullable: true
+
+    Task:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [title, status, priority]
+          properties:
+            projectId:
+              type: string
+              format: uuid
+              nullable: true
+            milestoneId:
+              type: string
+              format: uuid
+              nullable: true
+            title: { type: string }
+            description: { type: string }
+            status: { $ref: '#/components/schemas/TaskStatus' }
+            priority: { $ref: '#/components/schemas/Priority' }
+            estimatedMinutes:
+              type: integer
+              minimum: 0
+              nullable: true
+            scheduledDate:
+              type: string
+              format: date
+              nullable: true
+            startTime:
+              type: string
+              nullable: true
+            timezone: { type: string }
+            dueAt:
+              type: string
+              format: date-time
+              nullable: true
+            completedAt:
+              type: string
+              format: date-time
+              nullable: true
+
+    Plan:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [projectId, currentVersionId]
+          properties:
+            projectId: { type: string, format: uuid }
+            currentVersionId: { type: string, format: uuid }
+
+    PlanVersion:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [planId]
+          properties:
+            planId: { type: string, format: uuid }
+            constraints: { type: object, additionalProperties: true }
+            stages:
+              type: array
+              items: { $ref: '#/components/schemas/Stage' }
+            source: { type: string }
+
+    Agent:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [name, rolePrompt, enabled]
+          properties:
+            name: { type: string }
+            rolePrompt: { type: string }
+            modelProfileId:
+              type: string
+              format: uuid
+              nullable: true
+            enabled: { type: boolean }
+
+    ModelProfile:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [providerType, baseUrl, model]
+          properties:
+            providerType: { type: string }
+            baseUrl: { type: string }
+            model: { type: string }
+            capabilities:
+              type: object
+              additionalProperties: true
+            temperature:
+              type: number
+              minimum: 0
+              maximum: 2
+            credentialSet: { type: boolean }
+
+    Library:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [title]
+          properties:
+            title: { type: string }
+
+    Document:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [libraryId, title, status]
+          properties:
+            libraryId: { type: string, format: uuid }
+            title: { type: string }
+            originalRef: { type: string }
+            contentRef: { type: string }
+            hash: { type: string }
+            status: { $ref: '#/components/schemas/DocumentStatus' }
+            source: { type: string }
+            parserVersion: { type: string }
+            errorReason:
+              type: string
+              nullable: true
+
+    Memory:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [kind, factStatus, agentId]
+          properties:
+            kind: { type: string }
+            contentRef: { type: string }
+            factStatus: { $ref: '#/components/schemas/MemoryFactStatus' }
+            agentId: { type: string, format: uuid }
+            sourceVersion: { type: string }
+            derivedScope: { type: string }
+            invalidReason:
+              type: string
+              nullable: true
+
+    Assessment:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [capability, judgment, status]
+          properties:
+            capability: { type: string }
+            judgment: { type: string }
+            status: { $ref: '#/components/schemas/AssessmentStatus' }
+            evidence: { type: string }
+            confirmedBy:
+              type: string
+              nullable: true
+            confirmedAt:
+              type: string
+              format: date-time
+              nullable: true
+
+    LearningProfile:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [language, purpose]
+          properties:
+            language: { type: string }
+            purpose: { $ref: '#/components/schemas/LearningPurpose' }
+            targetLevelMin: { type: string, nullable: true }
+            targetLevelMax: { type: string, nullable: true }
+            targetMonths: { type: integer, nullable: true }
+            currentLevel: { type: string, nullable: true }
+            examType: { type: string, nullable: true }
+            weeklyMinutes: { type: integer, nullable: true }
+
+    LearningRecord:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [profileId]
+          properties:
+            profileId: { type: string, format: uuid }
+            taskId:
+              type: string
+              format: uuid
+              nullable: true
+            startedAt:
+              type: string
+              format: date-time
+              nullable: true
+            endedAt:
+              type: string
+              format: date-time
+              nullable: true
+            durationSource: { type: string }
+            result: { type: string }
+            userFeedback: { type: string }
+
+    Skill:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [name]
+          properties:
+            name: { type: string }
+            description: { type: string }
+            manifest: { type: object, additionalProperties: true }
+            contentHash: { type: string }
+            source: { type: string }
+            installStatus: { type: string }
+            enabled: { type: boolean }
+
+    SkillVersion:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [skillId, version]
+          properties:
+            skillId: { type: string, format: uuid }
+            version: { type: string }
+            contentHash: { type: string }
+
+    Workflow:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [trigger, action, enabled]
+          properties:
+            trigger: { type: object, additionalProperties: true }
+            timezone: { type: string }
+            action: { type: object, additionalProperties: true }
+            enabled: { type: boolean }
+
+    WorkflowRun:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [workflowId, scheduledFor, status]
+          properties:
+            workflowId: { type: string, format: uuid }
+            scheduledFor:
+              type: string
+              format: date-time
+            status: { $ref: '#/components/schemas/WorkflowRunStatus' }
+            idempotencyKey: { type: string }
+
+    Job:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [kind, status]
+          properties:
+            kind: { type: string }
+            status: { $ref: '#/components/schemas/JobStatus' }
+            progress: { type: number }
+            failureReason:
+              type: string
+              nullable: true
+            retryable: { type: boolean }
+
+    Notification:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [kind, read]
+          properties:
+            kind: { type: string }
+            read: { type: boolean }
+            target:
+              type: object
+              additionalProperties: true
+
+    Proposal:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          required: [sessionId, agentId, summary, actions, status, payloadHash]
+          properties:
+            sessionId: { type: string, format: uuid }
+            agentId: { type: string, format: uuid }
+            summary: { type: string }
+            actions:
+              type: array
+              items: { $ref: '#/components/schemas/ProposalAction' }
+            baseRevisions:
+              type: object
+              additionalProperties:
+                type: integer
+            status: { $ref: '#/components/schemas/ProposalStatus' }
+            expiresAt:
+              type: string
+              format: date-time
+            payloadHash: { type: string }
+
+    ProposalAction:
+      type: object
+      required: [operation, entityType, before, after, reason]
+      properties:
+        operation:
+          type: string
+          enum: [create, update, archive, cancel, complete]
+        entityType: { type: string }
+        entityId:
+          type: string
+          nullable: true
+        expectedRevision:
+          type: integer
+          nullable: true
+        before: { type: object, additionalProperties: true }
+        after: { type: object, additionalProperties: true }
+        reason: { type: string }
+        sourceRefs:
+          type: array
+          items: { type: string }
+
+    # ---------- 流式事件 ----------
+    StreamEvent:
+      type: object
+      required: [runId, sequence, type, payload, createdAt]
+      properties:
+        runId: { type: string }
+        sequence: { type: integer }
+        type:
+          type: string
+          enum:
+            - message.delta
+            - tool.started
+            - tool.result
+            - knowledge.sources
+            - proposal.created
+            - memory.saved
+            - run.done
+            - run.error
+        payload: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+
+  responses:
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Conflict:
+      description: 版本或幂等冲突
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Unprocessable:
+      description: 业务约束不满足
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+paths:
+  /health:
+    get:
+      summary: 服务状态
+      responses:
+        '200':
+          description: 运行中
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+
+  /bootstrap:
+    get:
+      summary: 初始化状态、功能能力、当前 Vault 状态、设置摘要
+      responses:
+        '200':
+          description: 返回引导信息
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+
+  /vault/open:
+    post:
+      summary: 消费主进程文件选择产生的短期令牌并打开 Vault
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+      responses:
+        '200': { description: 打开成功 }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /vault/status:
+    get:
+      summary: 查询当前 Vault 状态
+      responses:
+        '200': { description: 状态信息 }
+
+  /goals:
+    get:
+      summary: 目标列表
+      responses:
+        '200': { description: 目标列表 }
+    post:
+      summary: 创建目标
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+      responses:
+        '201': { description: 创建成功 }
+
+  /goals/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: 目标详情
+      responses: { '200': { description: 详情 } }
+    patch:
+      summary: 手动编辑（带 expectedRevision）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PatchBody' }
+      responses:
+        '200': { description: 更新成功 }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      summary: 软删除/归档；删除影响先预览
+      responses: { '200': { description: 已归档 } }
+
+  /projects:
+    get: { summary: 项目列表 }
+    post:
+      summary: 创建项目
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+
+  /projects/{id}:
+    get: { summary: 项目详情 }
+    patch: { summary: 手动编辑项目 }
+    delete: { summary: 软删除/归档项目 }
+
+  /projects/{id}/stages:
+    get: { summary: 阶段列表 }
+    post: { summary: 创建阶段 }
+
+  /projects/{id}/milestones:
+    get: { summary: 里程碑列表 }
+    post: { summary: 创建里程碑 }
+
+  /stages/{id}:
+    patch: { summary: 编辑阶段 }
+    delete: { summary: 归档阶段 }
+
+  /milestones/{id}:
+    patch: { summary: 编辑里程碑 }
+    delete: { summary: 归档里程碑 }
+
+  /projects/{id}/plan:
+    get: { summary: 当前计划 }
+
+  /plans/{id}/versions:
+    get: { summary: 计划历史版本 }
+
+  /projects/{id}/plan-versions:
+    post:
+      summary: 用户直接保存计划新版本；AI 只能经提案调用内部同一服务
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+
+  /calendar:
+    get: { summary: 由 tasks 按日期、时区和状态投影 }
+
+  /today:
+    get: { summary: 今日任务投影 }
+
+  /tasks:
+    get: { summary: 任务列表 }
+    post:
+      summary: 创建任务
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+
+  /tasks/{id}:
+    get: { summary: 任务详情 }
+    patch: { summary: 手动编辑任务 }
+    delete: { summary: 软删除/归档任务 }
+
+  /agents:
+    get: { summary: Agent 列表 }
+    post: { summary: 创建 Agent }
+
+  /agents/{id}:
+    get: { summary: Agent 详情 }
+    patch: { summary: 编辑 Agent }
+    delete: { summary: 归档 Agent }
+
+  /agents/{id}/grants:
+    put: { summary: 更新资料授权 }
+
+  /agents/{id}/skills:
+    put: { summary: 更新 Skill 版本绑定 }
+
+  /model-profiles:
+    get: { summary: 模型配置列表 }
+    post: { summary: 创建模型配置 }
+
+  /model-profiles/{id}:
+    patch: { summary: 修改模型配置 }
+    delete: { summary: 删除模型配置 }
+
+  /model-profiles/{id}/test:
+    post: { summary: 连接及能力探测，记录结果 }
+
+  /libraries:
+    get: { summary: 资料库列表 }
+    post: { summary: 创建资料库 }
+
+  /libraries/{id}:
+    patch: { summary: 编辑资料库 }
+    delete: { summary: 删除资料库 }
+
+  /libraries/{id}/documents:
+    post:
+      summary: 导入资料
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+
+  /documents/{id}:
+    get: { summary: 资料及处理状态 }
+    patch: { summary: 元数据编辑 }
+    delete: { summary: 删除资料 }
+
+  /documents/{id}/content:
+    get: { summary: 授权后读取正文（含来源定位） }
+
+  /documents/{id}/file:
+    get: { summary: 授权后读取原件 }
+
+  /documents/{id}/retry:
+    post: { summary: 失败重试 }
+
+  /search:
+    post:
+      summary: 指定 agentId、query、scope；服务端限制资料和记忆授权
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+
+  /sessions:
+    get: { summary: 会话列表 }
+    post: { summary: 创建会话 }
+
+  /sessions/{id}/messages:
+    get: { summary: 会话历史 }
+
+  /sessions/{id}/turns:
+    post:
+      summary: 保存消息、创建运行，返回 runId；后端执行工具循环
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+
+  /runs/{id}/events:
+    get:
+      summary: SSE 事件流（支持 Last-Event-ID 重放）
+      responses:
+        '200':
+          description: text/event-stream
+          content:
+            text/event-stream:
+              schema: { $ref: '#/components/schemas/StreamEvent' }
+
+  /runs/{id}/cancel:
+    post: { summary: 取消运行 }
+
+  /proposals:
+    get: { summary: 待处理提案列表 }
+
+  /proposals/{id}:
+    get: { summary: 提案完整变化 }
+    patch: { summary: 修改草稿 }
+
+  /proposals/{id}/confirm:
+    post:
+      summary: 确认（含 payloadHash 和版本）
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+
+  /proposals/{id}/reject:
+    post: { summary: 拒绝 }
+
+  /learning-profiles:
+    get: { summary: 学习档案列表 }
+    post: { summary: 创建学习档案 }
+
+  /learning-profiles/{id}:
+    patch: { summary: 编辑学习档案 }
+
+  /learning-records:
+    get: { summary: 学习记录列表 }
+    post: { summary: 创建学习记录 }
+
+  /learning-records/{id}:
+    patch: { summary: 纠错 }
+    delete: { summary: 删除 }
+
+  /assessments:
+    get: { summary: 能力结论列表 }
+
+  /assessments/{id}/confirm:
+    post: { summary: 确认能力结论 }
+
+  /assessments/{id}/reject:
+    post: { summary: 拒绝能力结论 }
+
+  /memories:
+    get: { summary: 记忆列表 }
+
+  /memories/{id}:
+    get: { summary: 记忆详情 }
+    patch: { summary: 更正 }
+    delete: { summary: 删除 }
+
+  /memories/{id}/regenerate:
+    post: { summary: 显式重新整理，重新检查来源和权限 }
+
+  /skills:
+    get: { summary: 已安装 Skill 列表 }
+
+  /skills/import:
+    post: { summary: 第三方导入预览 }
+
+  /skills/drafts:
+    post: { summary: 聊天创建草稿 }
+
+  /skills/{id}:
+    get: { summary: Skill 详情 }
+    patch: { summary: 草稿修改 }
+    delete: { summary: 卸载 }
+
+  /skills/{id}/install:
+    post: { summary: 安装 }
+
+  /skills/{id}/enable:
+    post: { summary: 启用 }
+
+  /skills/{id}/disable:
+    post: { summary: 停用 }
+
+  /skills/{id}/versions:
+    post: { summary: 新版本预览/安装 }
+
+  /skills/{id}/rollback:
+    post: { summary: 回退 }
+
+  /workflows:
+    get: { summary: 规则列表 }
+    post: { summary: 创建规则 }
+
+  /workflows/{id}:
+    patch: { summary: 修改规则 }
+    delete: { summary: 停用或归档 }
+
+  /workflows/{id}/run:
+    post:
+      summary: 手动执行
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+
+  /workflow-runs:
+    get: { summary: 运行历史 }
+
+  /workflow-runs/{id}/resume:
+    post: { summary: 恢复错过或中断的运行 }
+
+  /workflow-runs/{id}/skip:
+    post: { summary: 跳过 }
+
+  /jobs:
+    get: { summary: 导入/摘要进度 }
+
+  /jobs/{id}/resume:
+    post: { summary: 显式恢复 }
+
+  /jobs/{id}/cancel:
+    post: { summary: 取消 }
+
+  /notifications:
+    get: { summary: 通知查询 }
+
+  /notifications/{id}:
+    patch: { summary: 已读 }
+
+  /imports/preview:
+    post: { summary: 旧数据迁移预览 }
+
+  /imports/commit:
+    post:
+      summary: 确认提交迁移
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+
+  /imports/{id}:
+    get: { summary: 迁移报告 }
+
+  /backups:
+    get: { summary: 备份列表 }
+    post:
+      summary: 创建备份
+      parameters: [$ref: '#/components/parameters/IdempotencyKey']
+
+  /backups/{id}/verify:
+    post: { summary: 完整性验证 }
+
+  /backups/{id}/restore:
+    post: { summary: 恢复到新目录，路径来自主进程选择令牌 }

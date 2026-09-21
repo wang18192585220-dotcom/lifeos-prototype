@@ -156,3 +156,30 @@ test('阶段/里程碑 CRUD 与任务一致性', async () => {
     assert.strictEqual(e.body.data.title, '改');
   });
 });
+
+test('计划：保存版本、读取当前与历史', async () => {
+  await withApp(async ({ api }) => {
+    const p = await api('POST', '/api/v1/projects', { title: 'p', area: 'a' });
+    const pid = p.body.data.id;
+
+    const v1 = await api('POST', `/api/v1/projects/${pid}/plan-versions`, {
+      constraints: { weeks: 12 },
+      stages: [{ title: '阶段1' }],
+    });
+    assert.strictEqual(v1.status, 201);
+    assert.deepStrictEqual(v1.body.data.constraints, { weeks: 12 });
+
+    const v2 = await api('POST', `/api/v1/projects/${pid}/plan-versions`, {
+      constraints: { weeks: 10 },
+      stages: [],
+    });
+    assert.strictEqual(v2.status, 201);
+
+    const plan = await api('GET', `/api/v1/projects/${pid}/plan`);
+    assert.strictEqual(plan.body.data.currentVersion.id, v2.body.data.id);
+    assert.deepStrictEqual(plan.body.data.currentVersion.constraints, { weeks: 10 });
+
+    const versions = await api('GET', `/api/v1/plans/${plan.body.data.plan.id}/versions`);
+    assert.strictEqual(versions.body.data.length, 2);
+  });
+});

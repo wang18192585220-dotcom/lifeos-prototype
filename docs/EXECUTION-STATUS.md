@@ -24,8 +24,8 @@
 | T10 | S1 | T00 | 存储 Agent | done | server/storage, server/platform | test:storage 6/6、test:content 4/4 | Vault 初始化/迁移/事务/outbox/锁/内容协议 |
 | T11 | S1 | T00 | 桌面前端 Agent | done | desktop/, renderer/, tests/desktop.test.cjs | test:desktop 4/4（含 Electron 冒烟） | 主 Agent 集成并修复 /api 命名空间冲突 |
 | T12 | S1 | T10,T11 | 主 Agent | done | server/app.cjs, server/storage/vault-service.js, tests/{contracts,vault,desktop}.test.cjs | test:contracts 4/4、test:vault 3/3 | 全部 35 项测试通过 |
-| T20 | S2 | T12 | 业务 Agent | not_started | — | — | — |
-| T21 | S2 | T12 | 前端 Agent | not_started | — | — | — |
+| T20 | S2 | T12 | 业务 Agent | done | server/modules/core, server/routes/core.js | test:core 21/21（含路由集成） | 已提交 |
+| T21 | S2 | T12 | 前端 Agent | in_progress | renderer/pages、renderer/state、renderer/components | 子 Agent 60a8a27a 执行中 | 待集成 |
 | T22 | S2 | T20,T21 | 主 Agent | not_started | — | — | — |
 | T30 | S3 | T22 | Agent 编排负责人 | not_started | — | — | — |
 | T31 | S3 | T22 | 知识负责人 | not_started | — | — | — |

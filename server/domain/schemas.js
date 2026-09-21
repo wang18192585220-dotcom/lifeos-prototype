@@ -56,6 +56,12 @@ const MilestoneBody = StageBody.extend({
   completedAt: z.string().nullable().optional(),
 });
 
+const PlanVersionBody = z.object({
+  constraints: z.unknown().optional(),
+  stages: z.unknown().optional(),
+  source: z.string().nullable().optional(),
+});
+
 module.exports = {
   uuid,
   isoDate,
@@ -69,4 +75,5 @@ module.exports = {
   ProjectInput,
   StageBody,
   MilestoneBody,
+  PlanVersionBody,
 };

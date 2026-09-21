@@ -6,7 +6,7 @@
  */
 const express = require('express');
 const crypto = require('node:crypto');
-const { GoalInput, ProjectInput, TaskInput, StageBody, MilestoneBody } = require('../domain/schemas');
+const { GoalInput, ProjectInput, TaskInput, StageBody, MilestoneBody, PlanVersionBody } = require('../domain/schemas');
 
 function rid() {
   return crypto.randomUUID();
@@ -155,6 +155,27 @@ function coreRoutes() {
   router.delete('/stages/:id', requireCore, deleteById('stages'));
   router.patch('/milestones/:id', requireCore, editById('milestones'));
   router.delete('/milestones/:id', requireCore, deleteById('milestones'));
+
+  // 计划（plan / plan_version）
+  router.get('/projects/:id/plan', requireCore, (req, res) => {
+    res.json({ data: getCore(req).getPlan(req.params.id) });
+  });
+  router.post('/projects/:id/plan-versions', requireCore, (req, res) => {
+    let parsed;
+    try {
+      parsed = PlanVersionBody.parse(req.body || {});
+    } catch (e) {
+      return fail(res, 422, 'validation', e.issues ? e.issues.map((i) => i.message).join('; ') : String(e));
+    }
+    try {
+      res.status(201).json({ data: getCore(req).savePlanVersion(req.params.id, parsed) });
+    } catch (e) {
+      handleError(res, e);
+    }
+  });
+  router.get('/plans/:id/versions', requireCore, (req, res) => {
+    res.json({ data: getCore(req).listPlanVersions(req.params.id) });
+  });
 
   return router;
 }

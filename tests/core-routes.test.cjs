@@ -126,3 +126,33 @@ test('未打开 Vault 时核心路由返回 503', async () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('阶段/里程碑 CRUD 与任务一致性', async () => {
+  await withApp(async ({ api }) => {
+    const p = await api('POST', '/api/v1/projects', { title: 'p', area: 'a' });
+    const pid = p.body.data.id;
+
+    const s = await api('POST', `/api/v1/projects/${pid}/stages`, { title: '阶段1', ord: 0 });
+    assert.strictEqual(s.status, 201);
+    assert.strictEqual(s.body.data.projectId, pid);
+
+    const m = await api('POST', `/api/v1/projects/${pid}/milestones`, { title: '里程碑1', ord: 0 });
+    assert.strictEqual(m.status, 201);
+    const mid = m.body.data.id;
+
+    const list = await api('GET', `/api/v1/projects/${pid}/milestones`);
+    assert.strictEqual(list.body.data.length, 1);
+
+    // 任务关联里程碑
+    const t = await api('POST', '/api/v1/tasks', { title: 't', projectId: pid, milestoneId: mid });
+    assert.strictEqual(t.status, 201);
+
+    // 编辑里程碑
+    const e = await api('PATCH', `/api/v1/milestones/${mid}`, {
+      expectedRevision: 1,
+      changes: { title: '改' },
+    });
+    assert.strictEqual(e.status, 200);
+    assert.strictEqual(e.body.data.title, '改');
+  });
+});

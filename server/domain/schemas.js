@@ -45,6 +45,17 @@ const ProjectInput = z.object({
   status: ProjectStatus.default('active'),
 });
 
+const StageBody = z.object({
+  ord: z.number().int().min(0).default(0),
+  title: z.string().trim().min(1).max(500),
+  description: z.string().max(20000).default(''),
+  targetDate: isoDate.nullable().optional(),
+});
+
+const MilestoneBody = StageBody.extend({
+  completedAt: z.string().nullable().optional(),
+});
+
 module.exports = {
   uuid,
   isoDate,
@@ -56,4 +67,6 @@ module.exports = {
   TaskInput,
   GoalInput,
   ProjectInput,
+  StageBody,
+  MilestoneBody,
 };

@@ -6,7 +6,7 @@
  */
 const express = require('express');
 const crypto = require('node:crypto');
-const { GoalInput, ProjectInput, TaskInput } = require('../domain/schemas');
+const { GoalInput, ProjectInput, TaskInput, StageBody, MilestoneBody } = require('../domain/schemas');
 
 function rid() {
   return crypto.randomUUID();
@@ -112,6 +112,49 @@ function coreRoutes() {
     if (!from || !to) return fail(res, 400, 'bad_request', '缺少 from/to 日期区间');
     res.json({ data: getCore(req).calendarRange(String(from), String(to)) });
   });
+
+  // 阶段 / 里程碑（project 子资源 + id 级编辑）
+  const createSub = (repoName, schema) => (req, res) => {
+    let parsed;
+    try {
+      parsed = schema.parse(req.body || {});
+    } catch (e) {
+      return fail(res, 422, 'validation', e.issues ? e.issues.map((i) => i.message).join('; ') : String(e));
+    }
+    try {
+      res.status(201).json({ data: getCore(req)[repoName].create({ ...parsed, projectId: req.params.id }) });
+    } catch (e) {
+      handleError(res, e);
+    }
+  };
+  const editById = (repoName) => (req, res) => {
+    const { expectedRevision, changes } = req.body || {};
+    if (typeof expectedRevision !== 'number' || !Number.isInteger(expectedRevision)) {
+      return fail(res, 400, 'bad_request', '缺少有效的 expectedRevision');
+    }
+    try {
+      res.json({ data: getCore(req)[repoName].update(req.params.id, expectedRevision, changes || {}) });
+    } catch (e) {
+      handleError(res, e);
+    }
+  };
+  const deleteById = (repoName) => (req, res) => {
+    getCore(req)[repoName].archive(req.params.id);
+    res.json({ data: { id: req.params.id, archived: true } });
+  };
+
+  router.get('/projects/:id/stages', requireCore, (req, res) => {
+    res.json({ data: getCore(req).stages.list({ projectId: req.params.id }) });
+  });
+  router.post('/projects/:id/stages', requireCore, createSub('stages', StageBody));
+  router.get('/projects/:id/milestones', requireCore, (req, res) => {
+    res.json({ data: getCore(req).milestones.list({ projectId: req.params.id }) });
+  });
+  router.post('/projects/:id/milestones', requireCore, createSub('milestones', MilestoneBody));
+  router.patch('/stages/:id', requireCore, editById('stages'));
+  router.delete('/stages/:id', requireCore, deleteById('stages'));
+  router.patch('/milestones/:id', requireCore, editById('milestones'));
+  router.delete('/milestones/:id', requireCore, deleteById('milestones'));
 
   return router;
 }

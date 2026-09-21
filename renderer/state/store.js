@@ -1,8 +1,6 @@
 /**
- * 极简内存状态仓库（S2 T21）。
- *
- * 所有业务数据只来自后端（经 window.lifeos.request），仅缓存在内存，
- * 不写 localStorage。各页面共用同一 store，保证跨页面一致。
+ * 内存状态仓库（S2/S3）。业务数据只来自后端，仅缓存内存，不写 localStorage。
+ * 各页面共用同一 store，保证跨页面一致。
  */
 import { get } from '../api/client.js';
 
@@ -10,6 +8,11 @@ const cache = {
   goals: null,
   projects: null,
   tasks: null,
+  agents: null,
+  modelProfiles: null,
+  libraries: null,
+  sessions: null,
+  proposals: null,
 };
 
 const listeners = new Set();
@@ -18,7 +21,6 @@ function notify() {
   for (const fn of [...listeners]) fn();
 }
 
-/** 订阅数据变化，返回取消订阅函数。 */
 export function subscribe(fn) {
   listeners.add(fn);
   return () => listeners.delete(fn);
@@ -29,52 +31,55 @@ async function fetchList(path) {
   return Array.isArray(res && res.data) ? res.data : [];
 }
 
-/** 同步读缓存（未加载返回空数组；页面应先 load）。 */
-export function getGoals() {
-  return cache.goals || [];
+function makeAccessors(name) {
+  const cap = name[0].toUpperCase() + name.slice(1);
+  return {
+    getter: () => cache[name] || [],
+    load: async () => {
+      cache[name] = await fetchList(`/api/v1/${name}`);
+      notify();
+      return cache[name];
+    },
+    invalidate: async () => {
+      cache[name] = await fetchList(`/api/v1/${name}`);
+      notify();
+      return cache[name];
+    },
+  };
 }
 
-export function getProjects() {
-  return cache.projects || [];
+const accessors = {};
+for (const n of ['goals', 'projects', 'tasks', 'agents', 'modelProfiles', 'libraries', 'sessions', 'proposals']) {
+  accessors[n] = makeAccessors(n);
 }
 
-export function getTasks() {
-  return cache.tasks || [];
-}
+export const getGoals = accessors.goals.getter;
+export const getProjects = accessors.projects.getter;
+export const getTasks = accessors.tasks.getter;
+export const getAgents = accessors.agents.getter;
+export const getModelProfiles = accessors.modelProfiles.getter;
+export const getLibraries = accessors.libraries.getter;
+export const getSessions = accessors.sessions.getter;
+export const getProposals = accessors.proposals.getter;
 
-/** 拉取并缓存；失败抛出，缓存保持旧值（便于保留用户输入与错误提示）。 */
-export async function loadGoals() {
-  cache.goals = await fetchList('/api/v1/goals');
-  notify();
-  return cache.goals;
-}
+export const loadGoals = accessors.goals.load;
+export const loadProjects = accessors.projects.load;
+export const loadTasks = accessors.tasks.load;
+export const loadAgents = accessors.agents.load;
+export const loadModelProfiles = accessors.modelProfiles.load;
+export const loadLibraries = accessors.libraries.load;
+export const loadSessions = accessors.sessions.load;
+export const loadProposals = accessors.proposals.load;
 
-export async function loadProjects() {
-  cache.projects = await fetchList('/api/v1/projects');
-  notify();
-  return cache.projects;
-}
+export const invalidateGoals = accessors.goals.invalidate;
+export const invalidateProjects = accessors.projects.invalidate;
+export const invalidateTasks = accessors.tasks.invalidate;
+export const invalidateAgents = accessors.agents.invalidate;
+export const invalidateModelProfiles = accessors.modelProfiles.invalidate;
+export const invalidateLibraries = accessors.libraries.invalidate;
+export const invalidateSessions = accessors.sessions.invalidate;
+export const invalidateProposals = accessors.proposals.invalidate;
 
-export async function loadTasks() {
-  cache.tasks = await fetchList('/api/v1/tasks');
-  notify();
-  return cache.tasks;
-}
-
-/** 失效并重新拉取（= load）。 */
-export function invalidateGoals() {
-  return loadGoals();
-}
-
-export function invalidateProjects() {
-  return loadProjects();
-}
-
-export function invalidateTasks() {
-  return loadTasks();
-}
-
-/** 并发刷新全部实体。 */
 export async function loadAll() {
   await Promise.all([loadGoals(), loadProjects(), loadTasks()]);
 }

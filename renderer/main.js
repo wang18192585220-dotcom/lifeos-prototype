@@ -3,6 +3,8 @@ import { render as renderToday } from './pages/today.js';
 import { render as renderCalendar } from './pages/calendar.js';
 import { render as renderGoals } from './pages/goals.js';
 import { render as renderProjects } from './pages/projects.js';
+import { render as renderChat } from './pages/chat.js';
+import { render as renderSettings } from './pages/settings.js';
 
 // baseUrl 只保存在内存变量；令牌由 preload 持有，不进入 renderer（README 4.2）。
 const session = { baseUrl: null };
@@ -12,6 +14,8 @@ const ROUTES = {
   calendar: { title: '日历', render: renderCalendar },
   goals: { title: '目标', render: renderGoals },
   projects: { title: '项目', render: renderProjects },
+  chat: { title: '聊天', render: renderChat },
+  settings: { title: '设置', render: renderSettings },
 };
 
 const statusEl = document.getElementById('status');

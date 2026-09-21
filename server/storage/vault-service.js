@@ -15,7 +15,7 @@ const TOKEN_TTL_MS = 5 * 60 * 1000;
 class VaultService {
   constructor() {
     this._handle = null;
-    this._core = null;
+    this._services = null;
     this._pathTokens = new Map();
   }
 
@@ -52,7 +52,7 @@ class VaultService {
     const handle = openVault(root);
     handle.root = root;
     this._handle = handle;
-    this._core = null; // 切换 Vault 后重建业务服务
+    this._services = null; // 切换 Vault 后重建业务服务
     return handle;
   }
 
@@ -67,14 +67,43 @@ class VaultService {
     return this._handle ? this._handle.adapter : null;
   }
 
-  /** 当前 Vault 的核心业务服务（惰性创建）；未打开时返回 null。 */
-  get core() {
+  /** 当前 Vault 的服务束（惰性创建）；未打开时返回 null。 */
+  get services() {
     if (!this._handle) return null;
-    if (!this._core) {
+    if (!this._services) {
       const { CoreService } = require('../modules/core');
-      this._core = new CoreService(this._handle.adapter);
+      const { KnowledgeService } = require('../modules/knowledge');
+      const { SessionService, ProposalService } = require('../modules/agent');
+      const { Repository } = require('../modules/core/repository');
+
+      const core = new CoreService(this._handle.adapter);
+      this._services = {
+        core,
+        knowledge: new KnowledgeService(this._handle.adapter, this._handle.root),
+        sessions: new SessionService(this._handle.adapter),
+        proposals: new ProposalService(this._handle.adapter, core),
+        agents: new Repository(this._handle.adapter, 'agents', {
+          name: 'name',
+          rolePrompt: 'role_prompt',
+          modelProfileId: 'model_profile_id',
+          enabled: 'enabled',
+        }),
+        modelProfiles: new Repository(this._handle.adapter, 'model_profiles', {
+          providerType: 'provider_type',
+          baseUrl: 'base_url',
+          model: 'model',
+          capabilities: 'capabilities',
+          temperature: 'temperature',
+          credentialRef: 'credential_ref',
+        }),
+      };
     }
-    return this._core;
+    return this._services;
+  }
+
+  /** 核心业务服务（向后兼容别名）。 */
+  get core() {
+    return this.services ? this.services.core : null;
   }
 
   close() {
@@ -82,7 +111,7 @@ class VaultService {
       this._handle.close();
       this._handle = null;
     }
-    this._core = null;
+    this._services = null;
   }
 }
 

@@ -85,6 +85,12 @@ class KnowledgeService {
       .run(agentId, libraryId, isoNow());
   }
 
+  /** 整体替换某 Agent 的资料库授权（README：撤销即时生效）。 */
+  setLibraryGrants(agentId, libraryIds = []) {
+    this.adapter.prepare('DELETE FROM agent_library_grants WHERE agent_id = ?').run(agentId);
+    for (const lid of libraryIds) this.grantLibrary(agentId, lid);
+  }
+
   revokeLibrary(agentId, libraryId) {
     this.adapter
       .prepare('DELETE FROM agent_library_grants WHERE agent_id = ? AND library_id = ?')

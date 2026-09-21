@@ -17,6 +17,7 @@ class StorageAdapter {
   constructor(dbPath) {
     this.dbPath = dbPath;
     this.db = null;
+    this._txDepth = 0;
   }
 
   /**
@@ -57,18 +58,38 @@ class StorageAdapter {
 
   /**
    * 在单个事务中执行 fn；抛错则整体回滚。
+   * 支持嵌套：内层用 SAVEPOINT，使外层事务可整体回滚（如提案原子确认）。
    * @template T
    * @param {() => T} fn
    * @returns {T}
    */
   transaction(fn) {
+    if (this._txDepth > 0) {
+      const sp = `sp_${this._txDepth}`;
+      this._txDepth += 1;
+      this.db.exec(`SAVEPOINT ${sp}`);
+      try {
+        const out = fn();
+        this.db.exec(`RELEASE ${sp}`);
+        this._txDepth -= 1;
+        return out;
+      } catch (e) {
+        this.db.exec(`ROLLBACK TO ${sp}`);
+        this.db.exec(`RELEASE ${sp}`);
+        this._txDepth -= 1;
+        throw e;
+      }
+    }
+    this._txDepth = 1;
     this.db.exec('BEGIN IMMEDIATE');
     try {
       const out = fn();
       this.db.exec('COMMIT');
+      this._txDepth = 0;
       return out;
     } catch (e) {
       this.db.exec('ROLLBACK');
+      this._txDepth = 0;
       throw e;
     }
   }

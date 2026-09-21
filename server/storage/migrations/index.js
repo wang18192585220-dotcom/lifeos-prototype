@@ -8,4 +8,5 @@ module.exports = [
   require('./0002_file_outbox.js'),
   require('./0003_core_tables.js'),
   require('./0004_agent_knowledge_tables.js'),
+  require('./0005_knowledge_chunks.js'),
 ];

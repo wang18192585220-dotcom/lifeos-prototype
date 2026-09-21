@@ -49,3 +49,21 @@
 - 打包后的安装版（`dist:win`）S5 再验证。
 - 真实模型提供商联调：未进行（无 API Key），不阻塞。
 - npm audit 报 moderate 漏洞（旧原型依赖树），S2 起替换旧依赖时处理。
+
+## S2 通用业务闭环测试
+
+`npm test`（50 项全绿）：
+
+| 套件 | 结果 | 覆盖 |
+| --- | --- | --- |
+| test:core | 22/22 | 仓储 CRUD、revision 乐观锁、任务-里程碑一致性、完成/重开、今日/日历统一投影、计划版本、HTTP 集成（冲突 409/非法 422/软删除 404/未开库 503） |
+| test:contracts | 5/5 | 新增 S2 核心路由「openapi 已声明」检查 |
+| test:desktop | 4/4 | Electron 冒烟（前端页面加载后 SMOKE_OK） |
+
+失败与修复：
+- 前端 `main.js` 按 `renderToday/renderCalendar/...` 具名导入，但页面统一导出 `render` → 模块加载失败、冒烟超时。改为别名导入 `import { render as renderToday }` 后通过。
+
+S2 验收核对：
+- 同一任务在各页面一致：各页共用 `state/store.js` + 同一后端 tasks 数据源。
+- 版本冲突可见：PATCH 409 → 前端保留输入并提示「内容已被其他操作修改」。
+- 无演示数据混入真库：页面只调用真实 API，无内置假数据。

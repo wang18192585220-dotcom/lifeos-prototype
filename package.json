@@ -2,6 +2,7 @@
   "name": "lifeos",
   "version": "0.1.0",
   "description": "LifeOS · 个人智能操作系统 - 本地后端",
+  "author": "LifeOS",
   "type": "commonjs",
   "main": "desktop/main.cjs",
   "scripts": {
@@ -58,8 +59,7 @@
       "output": "dist"
     },
     "win": {
-      "target": "nsis",
-      "arch": ["x64"]
+      "target": "nsis"
     }
   }
 }

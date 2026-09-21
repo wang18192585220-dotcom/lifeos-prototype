@@ -37,9 +37,9 @@
 | T43 | S4 | T33 | 调度负责人 | done | server/modules/workflows | test:workflows 4/4（幂等/错过检测） | 已提交 |
 | T44 | S4 | T40,T41,T42,T43 | 前端负责人 | done | renderer/pages/learning.js、memory.js、settings.js | Electron 冒烟 SMOKE_OK | 已提交 |
 | T45 | S4 | T44 | 主 Agent | done | tests/spanish-scenario.test.cjs | 完整西语场景 1/1 | 进入 S5 |
-| T50 | S5 | T45 | 迁移备份负责人 | not_started | — | — | — |
-| T51 | S5 | T50 | 桌面前端负责人 | not_started | — | — | — |
-| T52 | S5 | T51 | 主 Agent + 验收 Agent | not_started | — | — | — |
+| T50 | S5 | T45 | 迁移备份负责人 | done | server/modules/backup, server/modules/migration, 迁移 0008 | test:backup 2/2、test:migration 3/3 | 已提交 |
+| T51 | S5 | T50 | 桌面前端负责人 | done | package.json(build)、desktop/main.cjs 凭据、routes/s5.js | pack/dist:win 成功；打包版冒烟 SMOKE_OK | 已提交 |
+| T52 | S5 | T51 | 主 Agent + 验收 Agent | in_progress | docs/USAGE.md、最终报告 | 待 GitHub 推送 | 待用户提供 remote/身份 |
 
 ## S0 现状快照（2026-09-21）
 
@@ -55,8 +55,8 @@
 
 ## 下一步（S5）
 
-1. 旧数据迁移：导出/预览/映射/确认/幂等导入（server/modules/migration + tools 导出器）。
-2. 备份与恢复：SQLite backup 快照、校验、恢复演练（server/modules/backup）。
-3. Windows 打包：electron-builder 配置、`dist:win` 安装产物、桌面凭据（safeStorage）接入。
-4. 操作说明与最终报告；真实模型提供商人工烟雾验证（或如实标记未验证）。
-5. 推送到 GitHub（待用户提供 remote/身份）。
+1. ~~旧数据迁移（导出/预览/映射/幂等导入）~~ 已完成（test:migration）。
+2. ~~备份与恢复（快照/校验/恢复演练）~~ 已完成（test:backup）。
+3. ~~Windows 打包（electron-builder dist:win）~~ 已完成；打包版冒烟 SMOKE_OK。
+4. 操作说明（docs/USAGE.md）已写；最终报告待补。
+5. **推送到 GitHub：待用户提供 remote 地址与身份。**

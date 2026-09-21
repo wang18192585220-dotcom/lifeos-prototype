@@ -14,6 +14,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const { createApp, generateToken } = require('../server/app.cjs');
+const { CredentialService } = require('../server/platform/credentials');
 
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
 const SMOKE_TIMEOUT_MS = 30_000;
@@ -135,7 +136,8 @@ function registerIpc() {
 
 async function startServer() {
   const token = generateToken();
-  const expressApp = createApp({ token, staticDir: RENDERER_DIR });
+  const credentials = new CredentialService();
+  const expressApp = createApp({ token, staticDir: RENDERER_DIR, services: { credentials } });
   expressServer = expressApp.listen(0, '127.0.0.1');
   await new Promise((resolve, reject) => {
     expressServer.once('listening', resolve);

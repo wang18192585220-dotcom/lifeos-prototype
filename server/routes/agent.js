@@ -100,6 +100,18 @@ function agentRoutes() {
     services(req).modelProfiles.archive(req.params.id);
     res.json({ data: { id: req.params.id, archived: true } });
   });
+  router.post('/model-profiles/:id/credential', (req, res) => {
+    const s = services(req);
+    const profile = s.modelProfiles.get(req.params.id);
+    if (!profile) return fail(res, 404, 'not_found', '模型配置不存在');
+    const key = req.body && req.body.key;
+    if (typeof key !== 'string' || !key.trim()) return fail(res, 422, 'validation', 'key 必填');
+    const credentials = req.lifeos.services.credentials;
+    if (!credentials) return fail(res, 503, 'not_available', '凭据服务不可用');
+    const ref = profile.credentialRef || `ref-${req.params.id}`;
+    credentials.set(ref, key.trim());
+    res.json({ data: { id: req.params.id, credentialSet: true } });
+  });
 
   // ---- agents ----
   router.get('/agents', (req, res) => {

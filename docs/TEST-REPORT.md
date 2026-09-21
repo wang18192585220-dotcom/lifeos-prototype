@@ -67,3 +67,27 @@ S2 验收核对：
 - 同一任务在各页面一致：各页共用 `state/store.js` + 同一后端 tasks 数据源。
 - 版本冲突可见：PATCH 409 → 前端保留输入并提示「内容已被其他操作修改」。
 - 无演示数据混入真库：页面只调用真实 API，无内置假数据。
+
+## S4 与 S5 测试
+
+`npm test`（104 项全绿）：
+
+| 套件 | 结果 | 覆盖 |
+| --- | --- | --- |
+| test:learning | 5/5 | 档案/记录计时/能力评估 pending→确认、拒绝后不再提出 |
+| test:memory | 4/4 | 摘要去重(dedupKey)、来源依赖、撤权/删除失效 |
+| test:skills | 6/6 | 生命周期/绑定/宿主可用性/内置 Skills 种子 |
+| test:workflows | 4/4 | 幂等调度/错过检测/状态流转 |
+| test:backup | 2/2 | 快照/校验/恢复、篡改检测 |
+| test:migration | 3/3 | 中文状态映射/未知状态报告/幂等去重 |
+| test:scenario | 1/1 | 完整西语场景端到端 |
+
+打包验证：
+- `npm run pack` → `dist/win-unpacked/LifeOS.exe`（打包版 `--smoke` 输出 SMOKE_OK，exit 0）。
+- `npm run dist:win` → `dist/LifeOS Setup 0.1.0.exe`（NSIS 安装包，exit 0）。
+
+未验证项：
+- 安装包在全新 Windows 环境的安装启动（本机只验证了 `--dir` 解包版启动）。
+- 真实模型提供商人工烟雾验证：未进行（无有效凭据），不阻塞，已列为交付限制。
+- 代码签名：无证书，使用默认 Electron 图标与无签名（个人测试版）。
+- safeStorage 凭据持久化：未接入（见 DECISIONS D-008）。

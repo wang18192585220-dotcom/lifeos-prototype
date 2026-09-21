@@ -37,3 +37,16 @@
 - 事实：renderer 源码 `renderer/api/client.js` 经静态服务映射为 URL `/api/client.js`，与 `/api` 路由命名空间冲突，被令牌门禁拦下返回 401，导致模块加载失败。
 - 决策：令牌门禁与未知 API 的 JSON 404 从 `app.use('/api', …)` 收窄为 `app.use('/api/v1', …)`；`renderer/api/` 的客户端源码作为静态资源正常服务。
 - 理由：契约明确「所有新接口使用 /api/v1」；renderer 源码目录名 `api/` 属于前端源文件组织，与后端 API 命名空间解耦。
+
+## D-007 electron-builder 打包配置（2026-09-21）
+
+- 决策：`main` 指向 `desktop/main.cjs`；`build.win.target = nsis`；`dist:win` = `electron-builder --win nsis --x64`。
+- 修正：`build.win.arch` 是非法选项（arch 是顶层/CLI 选项），已移除；补 `author` 字段。
+- 验证：`npm run pack` 与 `npm run dist:win` 均 exit 0；打包版 `dist/win-unpacked/LifeOS.exe --smoke` 输出 SMOKE_OK。
+- 产物：`dist/win-unpacked/`（可启动目录）与 `dist/LifeOS Setup 0.1.0.exe`（NSIS 安装包）；默认图标、无代码签名（个人测试版）。
+
+## D-008 模型凭据存储（首版内存，safeStorage 后置）（2026-09-21）
+
+- 现状：`CredentialService` 为内存实现，经 `POST /model-profiles/:id/credential` 写入；桌面主进程注入到 createApp。
+- 限制：Key 不落盘，重启后需重新设置；safeStorage 加密持久化到 `secrets.enc` 尚未接入。
+- 理由：safeStorage 依赖 Electron 主进程与操作系统账户，且需 UI 输入流闭环；先保证聊天链路可用，持久化作为已列明限制。

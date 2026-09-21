@@ -9,8 +9,8 @@
 
 | 阶段 | 状态 | 放行条件 |
 | --- | --- | --- |
-| S0 基线与契约 | in_progress | Node 与 Electron 的数据库能力验证通过；安装依赖和运行步骤可复现 |
-| S1 桌面与存储 | not_started | 重启不丢数据；越界访问被拒；文件发布失败可修复 |
+| S0 基线与契约 | done | Node 与 Electron 的数据库能力验证通过；安装依赖和运行步骤可复现 |
+| S1 桌面与存储 | in_progress | 重启不丢数据；越界访问被拒；文件发布失败可修复 |
 | S2 通用业务闭环 | not_started | 同一任务在各页面一致；版本冲突可见；无演示数据混入真库 |
 | S3 AI 与资料 | not_started | AI 不能绕过确认；拒绝不落地；授权隔离及断线恢复通过 |
 | S4 Skills 与学习 | not_started | 完整学习场景通过；撤权无泄漏；能力判断待确认；错过不补跑 |
@@ -20,8 +20,8 @@
 
 | ID | 阶段 | 依赖 | 负责人 | 状态 | 变更文件 | 验证 | 下一步 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| T00 | S0 | 无 | 主 Agent | in_progress | tools/runtime-check.cjs, docs/* | runtime-check 双运行时 7/7 | openapi 契约、scripts、提交基线 |
-| T10 | S1 | T00 | 存储 Agent | not_started | — | — | — |
+| T00 | S0 | 无 | 主 Agent | done | tools/runtime-check.cjs, docs/*, package.json | runtime-check 双运行时 7/7；openapi 79 路径 | 已提交 99ff4e6，进入 S1 |
+| T10 | S1 | T00 | 存储 Agent | in_progress | server/storage, server/platform | test:storage | Vault 初始化/迁移/事务/outbox/锁 |
 | T11 | S1 | T00 | 桌面前端 Agent | not_started | — | — | — |
 | T12 | S1 | T10,T11 | 主 Agent | not_started | — | — | — |
 | T20 | S2 | T12 | 业务 Agent | not_started | — | — | — |
@@ -53,8 +53,10 @@
 
 - 无。GitHub remote 待用户提供（不影响 S0 推进）。
 
-## 下一步
+## 下一步（S1）
 
-1. 完成 `docs/openapi.yaml` 接口契约。
-2. 更新 `package.json` 脚本并锁定依赖。
-3. 提交 S0 基线。
+1. 建立目录骨架与 StorageAdapter（node:sqlite，模块级 backup）。
+2. createApp 应用工厂：解耦启动/定时器/静态服务；未知 API 返回 JSON 404。
+3. Electron 主进程 + 受限 preload bridge + 单实例锁 + 退出生命周期。
+4. Vault 写入协议（staging→原子重命名→事务→outbox）。
+5. test:storage 跑通，提交 S1。

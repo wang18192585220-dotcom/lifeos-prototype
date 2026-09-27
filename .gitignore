@@ -7,3 +7,4 @@ server/data/uploads/
 dist/
 preview-vault/
 demo-vault/
+.gh-cache/

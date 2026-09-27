@@ -15,6 +15,7 @@ const path = require('node:path');
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const { createApp, generateToken } = require('../server/app.cjs');
 const { CredentialService } = require('../server/platform/credentials');
+const { VaultService } = require('../server/storage/vault-service');
 
 const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
 const SMOKE_TIMEOUT_MS = 30_000;
@@ -29,6 +30,7 @@ function smokeLog(msg) {
 let mainWindow = null;
 let expressServer = null;
 let bootstrap = null; // { baseUrl, token }
+const vault = new VaultService(); // 打开/切换 Vault 与一次性路径令牌
 let smokeTimer = null;
 let quitting = false;
 const smoke = { bridgeReady: false, bootstrapServed: false, finished: false };
@@ -130,14 +132,16 @@ function registerIpc() {
     if (result.canceled || !Array.isArray(result.filePaths) || result.filePaths.length === 0) {
       return null;
     }
-    return result.filePaths[0];
+    // 仅由主进程在用户确认目录后签发一次性路径令牌；renderer 经 /vault/open 消费。
+    const dir = result.filePaths[0];
+    return { path: dir, token: vault.registerPathToken(dir) };
   });
 }
 
 async function startServer() {
   const token = generateToken();
   const credentials = new CredentialService();
-  const expressApp = createApp({ token, staticDir: RENDERER_DIR, services: { credentials } });
+  const expressApp = createApp({ token, staticDir: RENDERER_DIR, services: { credentials, vault } });
   expressServer = expressApp.listen(0, '127.0.0.1');
   await new Promise((resolve, reject) => {
     expressServer.once('listening', resolve);

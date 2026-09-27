@@ -6,3 +6,4 @@ server/data/uploads/
 !server/data/.gitkeep
 dist/
 preview-vault/
+demo-vault/

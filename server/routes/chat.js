@@ -54,7 +54,12 @@ router.post('/', async (req, res) => {
           const contextText = relevant.map((r, i) =>
             `[${i + 1}] 来源：${r.source}${r.title ? ` - ${r.title}` : ''}\n${r.content}`
           ).join('\n\n');
-          fullMessages.splice(fullMessages.length - 1, 0, {
+          // 知识上下文插到最新一条 user 消息之前，避免切断 assistant.tool_calls → tool 的配对
+          let insertIdx = fullMessages.length - 1;
+          for (let k = fullMessages.length - 1; k >= 0; k--) {
+            if (fullMessages[k].role === 'user') { insertIdx = k; break; }
+          }
+          fullMessages.splice(insertIdx, 0, {
             role: 'system',
             content: `以下是知识库中与用户问题相关的内容，请在回答时参考：\n\n${contextText}`
           });
@@ -103,7 +108,12 @@ router.post('/stream', async (req, res) => {
           const contextText = relevant.map((r, i) =>
             `[${i + 1}] ${r.source}${r.title ? ' - ' + r.title : ''}\n${r.content}`
           ).join('\n\n');
-          fullMessages.splice(fullMessages.length - 1, 0, {
+          // 知识上下文插到最新一条 user 消息之前，避免切断 assistant.tool_calls → tool 的配对
+          let insertIdx = fullMessages.length - 1;
+          for (let k = fullMessages.length - 1; k >= 0; k--) {
+            if (fullMessages[k].role === 'user') { insertIdx = k; break; }
+          }
+          fullMessages.splice(insertIdx, 0, {
             role: 'system',
             content: `以下是知识库中与用户问题相关的内容，请在回答时参考：\n\n${contextText}`
           });

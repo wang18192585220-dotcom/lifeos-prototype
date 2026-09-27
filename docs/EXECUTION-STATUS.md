@@ -3,7 +3,7 @@
 > 主开发 Agent 维护。每任务记录 id、dependsOn、owner、status、changedFiles、verification、blocker、nextAction。
 > 状态：not_started / in_progress / review / done / blocked。
 
-更新：2026-09-21（S2 完成）
+更新：2026-09-21（S5 完成）
 
 ## 阶段总览
 
@@ -14,7 +14,7 @@
 | S2 通用业务闭环 | done | 同一任务在各页面一致；版本冲突可见；无演示数据混入真库 |
 | S3 AI 与资料 | done | AI 不能绕过确认；拒绝不落地；授权隔离及断线恢复通过 |
 | S4 Skills 与学习 | done | 完整学习场景通过；撤权无泄漏；能力判断待确认；错过不补跑 |
-| S5 迁移与交付 | in_progress | 干净环境安装启动、恢复演练、端到端场景通过，报告真实限制 |
+| S5 迁移与交付 | done | 干净环境安装启动、恢复演练、端到端场景通过，报告真实限制 |
 
 ## 任务表
 
@@ -39,7 +39,7 @@
 | T45 | S4 | T44 | 主 Agent | done | tests/spanish-scenario.test.cjs | 完整西语场景 1/1 | 进入 S5 |
 | T50 | S5 | T45 | 迁移备份负责人 | done | server/modules/backup, server/modules/migration, 迁移 0008 | test:backup 2/2、test:migration 3/3 | 已提交 |
 | T51 | S5 | T50 | 桌面前端负责人 | done | package.json(build)、desktop/main.cjs 凭据、routes/s5.js | pack/dist:win 成功；打包版冒烟 SMOKE_OK | 已提交 |
-| T52 | S5 | T51 | 主 Agent + 验收 Agent | in_progress | docs/USAGE.md、最终报告 | 待 GitHub 推送 | 待用户提供 remote/身份 |
+| T52 | S5 | T51 | 主 Agent + 验收 Agent | done | docs/USAGE.md、docs/FINAL-REPORT.md | 全量 104 项测试通过；已推送 GitHub（origin/main） | 交付完成 |
 
 ## S0 现状快照（2026-09-21）
 
@@ -51,12 +51,14 @@
 
 ## 阻塞项
 
-- 无。GitHub remote 待用户提供（不影响 S0 推进）。
+- 无。
 
 ## 下一步（S5）
 
 1. ~~旧数据迁移（导出/预览/映射/幂等导入）~~ 已完成（test:migration）。
 2. ~~备份与恢复（快照/校验/恢复演练）~~ 已完成（test:backup）。
 3. ~~Windows 打包（electron-builder dist:win）~~ 已完成；打包版冒烟 SMOKE_OK。
-4. 操作说明（docs/USAGE.md）已写；最终报告待补。
-5. **推送到 GitHub：待用户提供 remote 地址与身份。**
+4. ~~操作说明（docs/USAGE.md）~~ 已完成；最终交付报告 docs/FINAL-REPORT.md 已补。
+5. ~~推送到 GitHub~~ 已完成：remote `origin` = https://github.com/wang18192585220-dotcom/lifeos-prototype.git，`main` 与 `origin/main` 一致（114dc85）。
+
+S0—S5 全部完成，首版交付结束。

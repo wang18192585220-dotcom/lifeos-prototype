@@ -52,7 +52,8 @@ window.lifeos = {
     }
     return data;
   },
-  async selectVault() { return window.__LIFEOS_BOOT__.vaultDir; },
+  // 预览模式已自动打开 Vault，故只返回路径、不签发一次性令牌（与桌面 preload 语义对齐）。
+  async selectVault() { return { path: window.__LIFEOS_BOOT__.vaultDir }; },
   onEvent() { throw new Error('onEvent 未实现'); },
   offEvent() {},
 };

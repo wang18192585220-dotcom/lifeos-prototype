@@ -80,6 +80,7 @@ class VaultService {
       const { WorkflowService } = require('../modules/workflows');
       const { BackupService } = require('../modules/backup');
       const { MigrationService } = require('../modules/migration');
+      const { FinanceService, NetworkService, HealthService } = require('../modules/lifestyle');
       const { seedBuiltinSkills } = require('../../skills/builtin');
       const { Repository } = require('../modules/core/repository');
 
@@ -97,6 +98,9 @@ class VaultService {
         workflows: new WorkflowService(this._handle.adapter),
         backup: new BackupService(this._handle.adapter, this._handle.root),
         migration: new MigrationService(this._handle.adapter, core),
+        finance: new FinanceService(this._handle.adapter),
+        network: new NetworkService(this._handle.adapter),
+        health: new HealthService(this._handle.adapter),
         agents: new Repository(this._handle.adapter, 'agents', {
           name: 'name',
           rolePrompt: 'role_prompt',

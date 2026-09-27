@@ -1,4 +1,4 @@
-import { get } from './api/client.js';
+import { get, post } from './api/client.js';
 import { render as renderToday } from './pages/today.js';
 import { render as renderCalendar } from './pages/calendar.js';
 import { render as renderGoals } from './pages/goals.js';
@@ -57,12 +57,38 @@ async function checkHealth() {
   }
 }
 
+async function refreshVaultStatus() {
+  try {
+    const st = await get('/api/v1/vault/status');
+    if (st && st.data && st.data.opened) {
+      vaultEl.textContent = `已打开：${st.data.root}`;
+      setStatus('已连接', true);
+      await renderRoute();
+    } else {
+      vaultEl.textContent = '未打开';
+      setStatus('未连接', false);
+    }
+  } catch (_) {
+    setStatus('未连接', false);
+  }
+}
+
 async function onSelectVault() {
   try {
-    const p = await window.lifeos.selectVault();
-    vaultEl.textContent = p ? `已选择：${p}` : '未选择';
+    const sel = await window.lifeos.selectVault();
+    if (!sel || !sel.path) {
+      vaultEl.textContent = '未选择';
+      return;
+    }
+    vaultEl.textContent = `已选择：${sel.path}`;
+    // 桌面 preload 返回一次性路径令牌；Web 预览已自动打开 Vault，无 token 直接刷新状态。
+    if (sel.token) {
+      await post('/api/v1/vault/open', { token: sel.token });
+    }
+    await refreshVaultStatus();
   } catch (_) {
     vaultEl.textContent = '选择失败';
+    setStatus('未连接', false);
   }
 }
 

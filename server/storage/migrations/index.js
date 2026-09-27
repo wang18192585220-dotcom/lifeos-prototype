@@ -12,4 +12,6 @@ module.exports = [
   require('./0006_skills_memory_learning_workflows.js'),
   require('./0007_memory_dedup_key.js'),
   require('./0008_import_batches.js'),
+  require('./0009_lifestyle_tables.js'),
+  require('./0010_app_state.js'),
 ];

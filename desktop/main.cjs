@@ -16,8 +16,10 @@ const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const { createApp, generateToken } = require('../server/app.cjs');
 const { CredentialService } = require('../server/platform/credentials');
 const { VaultService } = require('../server/storage/vault-service');
+const { demoCompatRoutes } = require('../server/routes/demo-compat');
 
-const RENDERER_DIR = path.join(__dirname, '..', 'renderer');
+const ROOT_DIR = path.join(__dirname, '..');
+const DEMO_FILE = path.join(ROOT_DIR, 'index.html');
 const SMOKE_TIMEOUT_MS = 30_000;
 const QUIT_GRACE_MS = 1_500;
 
@@ -33,7 +35,7 @@ let bootstrap = null; // { baseUrl, token }
 const vault = new VaultService(); // 打开/切换 Vault 与一次性路径令牌
 let smokeTimer = null;
 let quitting = false;
-const smoke = { bridgeReady: false, bootstrapServed: false, finished: false };
+const smoke = { bridgeReady: false, bootstrapServed: false, pageLoaded: false, finished: false };
 
 // ---- 单实例锁 ----
 if (!app.requestSingleInstanceLock()) {
@@ -83,7 +85,7 @@ function smokeFail(reason) {
 
 async function runSmokeHealthCheck() {
   if (!isSmoke || smoke.finished) return;
-  if (!smoke.bridgeReady || !smoke.bootstrapServed) return;
+  if (!smoke.pageLoaded) return;
   try {
     const res = await fetch(`${bootstrap.baseUrl}/api/v1/health`, {
       headers: { authorization: `Bearer ${bootstrap.token}` },
@@ -141,7 +143,16 @@ function registerIpc() {
 async function startServer() {
   const token = generateToken();
   const credentials = new CredentialService();
-  const expressApp = createApp({ token, staticDir: RENDERER_DIR, services: { credentials, vault } });
+  // 默认打开用户数据目录下的 Vault，使 index.html（demo）经 /api/* 持久化，行为对齐开发态 npm start。
+  const vaultDir = process.env.LIFEOS_VAULT
+    ? path.resolve(process.env.LIFEOS_VAULT)
+    : path.join(app.getPath('userData'), 'vault');
+  vault.open(vaultDir);
+  const expressApp = createApp({ token, staticDir: null, services: { credentials, vault } });
+  expressApp.use('/api', demoCompatRoutes());
+  expressApp.get('/', (req, res) => {
+    res.type('html').send(fs.readFileSync(DEMO_FILE, 'utf8'));
+  });
   expressServer = expressApp.listen(0, '127.0.0.1');
   await new Promise((resolve, reject) => {
     expressServer.once('listening', resolve);
@@ -168,7 +179,11 @@ async function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
-  mainWindow.webContents.on('did-finish-load', () => smokeLog('did-finish-load'));
+  mainWindow.webContents.on('did-finish-load', () => {
+    smoke.pageLoaded = true;
+    smokeLog('did-finish-load');
+    void runSmokeHealthCheck();
+  });
   mainWindow.webContents.on('did-fail-load', (e, code, desc) =>
     smokeLog(`did-fail-load ${code} ${desc}`)
   );

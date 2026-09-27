@@ -12,6 +12,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const { createApp, generateToken } = require('../server/app.cjs');
 const { CredentialService } = require('../server/platform/credentials');
@@ -24,6 +25,11 @@ const SMOKE_TIMEOUT_MS = 30_000;
 const QUIT_GRACE_MS = 1_500;
 
 const isSmoke = process.argv.includes('--smoke');
+
+// 冒烟模式使用临时 userData：不依赖系统用户目录（沙盒/CI 可写），使冒烟可在本机复跑。
+if (isSmoke) {
+  app.setPath('userData', path.join(os.tmpdir(), `lifeos-smoke-${process.pid}`));
+}
 
 function smokeLog(msg) {
   if (isSmoke) fs.writeSync(2, `[smoke] ${msg}\n`);
@@ -97,6 +103,13 @@ async function runSmokeHealthCheck() {
     const body = await res.json();
     if (!body || !body.data || body.data.status !== 'ok') {
       smokeFail('health 响应格式不符');
+      return;
+    }
+    // 功能验证：首页必须是手写 index.html（标题含「个人智能操作系统」），否则判定界面不一致。
+    const htmlRes = await fetch(`${bootstrap.baseUrl}/`);
+    const html = await htmlRes.text();
+    if (!html.includes('个人智能操作系统')) {
+      smokeFail('首页未加载手写 index.html（界面不一致）');
       return;
     }
     smokeOk();

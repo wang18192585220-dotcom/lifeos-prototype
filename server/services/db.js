@@ -5,15 +5,37 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
-const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
-const DOCS_FILE = path.join(DATA_DIR, 'knowledge_docs.json');
-const CHUNKS_FILE = path.join(DATA_DIR, 'knowledge_chunks.json');
-const ENTRIES_FILE = path.join(DATA_DIR, 'knowledge_entries.json');
-const WORKFLOWS_FILE = path.join(DATA_DIR, 'workflows.json');
-const WORKFLOW_LOGS_FILE = path.join(DATA_DIR, 'workflow_logs.json');
-const SKILLS_FILE = path.join(DATA_DIR, 'skills.json');
-const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+function resolveDataDir() {
+  return process.env.LIFEOS_DATA_DIR
+    ? path.resolve(process.env.LIFEOS_DATA_DIR)
+    : path.join(__dirname, '..', 'data');
+}
+
+let DATA_DIR = resolveDataDir();
+let CONFIG_FILE = path.join(DATA_DIR, 'config.json');
+let DOCS_FILE = path.join(DATA_DIR, 'knowledge_docs.json');
+let CHUNKS_FILE = path.join(DATA_DIR, 'knowledge_chunks.json');
+let ENTRIES_FILE = path.join(DATA_DIR, 'knowledge_entries.json');
+let WORKFLOWS_FILE = path.join(DATA_DIR, 'workflows.json');
+let WORKFLOW_LOGS_FILE = path.join(DATA_DIR, 'workflow_logs.json');
+let SKILLS_FILE = path.join(DATA_DIR, 'skills.json');
+let UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+
+/**
+ * 重定向数据目录。桌面端打包后 __dirname 位于只读的 app.asar 内，
+ * 直接写入会抛 ENOTDIR；必须在服务启动前指向可写目录（如 Electron userData）。
+ */
+function configureDataDir(dir) {
+  DATA_DIR = path.resolve(dir);
+  CONFIG_FILE = path.join(DATA_DIR, 'config.json');
+  DOCS_FILE = path.join(DATA_DIR, 'knowledge_docs.json');
+  CHUNKS_FILE = path.join(DATA_DIR, 'knowledge_chunks.json');
+  ENTRIES_FILE = path.join(DATA_DIR, 'knowledge_entries.json');
+  WORKFLOWS_FILE = path.join(DATA_DIR, 'workflows.json');
+  WORKFLOW_LOGS_FILE = path.join(DATA_DIR, 'workflow_logs.json');
+  SKILLS_FILE = path.join(DATA_DIR, 'skills.json');
+  UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+}
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -317,6 +339,7 @@ function initBuiltinSkills() {
 }
 
 function listSkills() {
+  initBuiltinSkills(); // 惰性播种内置技能，避免技能列表/工具集为空
   return readJSON(SKILLS_FILE, []).sort((a, b) => b.installedAt - a.installedAt);
 }
 
@@ -370,7 +393,8 @@ module.exports = {
   getSkillByName,
   updateSkill,
   // paths
-  UPLOADS_DIR,
-  DATA_DIR,
+  configureDataDir,
+  get UPLOADS_DIR() { return UPLOADS_DIR; },
+  get DATA_DIR() { return DATA_DIR; },
   genId,
 };

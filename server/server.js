@@ -16,6 +16,7 @@ const { createApp, generateToken } = require('./app.cjs');
 const { VaultService } = require('./storage/vault-service');
 const { CredentialService } = require('./platform/credentials');
 const { demoCompatRoutes } = require('./routes/demo-compat');
+const { startWorkflowEngine } = require('./services/workflow');
 
 const PORT = Number(process.env.LIFEOS_PORT || 4174);
 const HOST = '127.0.0.1';
@@ -40,6 +41,9 @@ app.use('/api', demoCompatRoutes());
 app.get('/', (req, res) => {
   res.type('html').send(fs.readFileSync(demoFile, 'utf8'));
 });
+
+// 启动工作流引擎：恢复上次已启用的定时工作流
+startWorkflowEngine();
 
 app.listen(PORT, HOST, () => {
   console.log(`LifeOS 运行于 http://${HOST}:${PORT}（前端 demo + 后端）`);

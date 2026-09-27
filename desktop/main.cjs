@@ -18,6 +18,8 @@ const { createApp, generateToken } = require('../server/app.cjs');
 const { CredentialService } = require('../server/platform/credentials');
 const { VaultService } = require('../server/storage/vault-service');
 const { demoCompatRoutes } = require('../server/routes/demo-compat');
+const { configureDataDir } = require('../server/services/db');
+const { startWorkflowEngine } = require('../server/services/workflow');
 
 const ROOT_DIR = path.join(__dirname, '..');
 const DEMO_FILE = path.join(ROOT_DIR, 'index.html');
@@ -156,6 +158,11 @@ function registerIpc() {
 async function startServer() {
   const token = generateToken();
   const credentials = new CredentialService();
+  // JSON 数据目录（config/知识库/技能/工作流/上传）重定向到 userData：
+  // 打包后 __dirname 位于只读 app.asar，直接写会抛 ENOTDIR，导致配置无法保存。
+  configureDataDir(path.join(app.getPath('userData'), 'data'));
+  // 恢复上次已启用的定时工作流
+  startWorkflowEngine();
   // 默认打开用户数据目录下的 Vault，使 index.html（demo）经 /api/* 持久化，行为对齐开发态 npm start。
   const vaultDir = process.env.LIFEOS_VAULT
     ? path.resolve(process.env.LIFEOS_VAULT)

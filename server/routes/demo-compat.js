@@ -66,6 +66,14 @@ function demoCompatRoutes() {
     res.json({ data: { key: req.params.key, saved: true } });
   });
 
+  // 删除整块状态（版本升级时清除旧演示数据用）
+  router.delete('/state/:key', (req, res) => {
+    const db = adapter(req);
+    if (!db) return fail(res, 503, 'vault_not_open', 'Vault 未打开');
+    db.prepare('DELETE FROM app_state WHERE key = ?').run(req.params.key);
+    res.json({ data: { key: req.params.key, deleted: true } });
+  });
+
   return router;
 }
 

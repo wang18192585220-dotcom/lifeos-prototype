@@ -4,11 +4,15 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 const knowledge = require('../services/knowledge');
-
-const uploadsDir = path.join(__dirname, '..', 'data', 'uploads');
+const db = require('../services/db');
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
+  destination: (req, file, cb) => {
+    // 数据目录在桌面端会被重定向到 userData；此处取动态值并确保目录存在。
+    const dir = db.UPLOADS_DIR;
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     const name = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}${ext}`;
@@ -101,6 +105,13 @@ router.post('/reindex/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
+});
+
+// 统一 multer 上传错误（文件类型不符 / 过大 / 目录不可写）为 JSON，
+// 避免把 Express 默认的 HTML 错误页返回给前端。
+router.use((err, req, res, next) => {
+  if (!err) return next();
+  res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({ ok: false, error: err.message || '上传失败' });
 });
 
 module.exports = router;

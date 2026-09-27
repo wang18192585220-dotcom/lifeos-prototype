@@ -33,7 +33,7 @@ jobs:
         run: npm test
 
       - name: Build NSIS installer
-        run: npm run dist:win
+        run: npm run dist:win -- --publish never
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
